@@ -1,18 +1,13 @@
+require 'delegate'
+
 module Mongoid
   module Report
 
-    class Collection
-      include Enumerable
-
+    class Collection < SimpleDelegator
       def initialize(rows, fields)
         @rows   = rows
         @fields = fields
-      end
-
-      def each(&block)
-        @rows.each do |row|
-          yield row
-        end
+        super(rows)
       end
 
       def summary
