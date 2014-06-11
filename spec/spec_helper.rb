@@ -17,6 +17,7 @@ RSpec.configure do |config|
 end
 
 require_relative '../lib/mongoid/report.rb'
+require_relative 'support/models.rb'
 
 RSpec.configure do |config|
   require 'rspec/expectations'

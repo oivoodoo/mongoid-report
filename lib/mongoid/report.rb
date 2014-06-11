@@ -15,8 +15,6 @@ module Mongoid
 
       self.settings = {}
 
-      attr_reader :queries
-
       def initialize
         self.class.settings.each do |klass, configuration|
           builder = QueriesBuilder.new(configuration)
@@ -25,13 +23,17 @@ module Mongoid
 
           # Now we have access to compiled queries to run it in aggregation
           # framework.
-          configuration[:queries] = queries
+          configuration[:queries] = @queries
         end
       end
 
-      def aggregate
-        # TODO: Model.collection.aggregate(self.class.queries)
-        {}
+      def queries(klass)
+        self.class.settings[klass][:queries]
+      end
+
+      # We should pass here mongoid document
+      def aggregate_for(klass)
+        klass.collection.aggregate(queries(Model))
       end
     end
 

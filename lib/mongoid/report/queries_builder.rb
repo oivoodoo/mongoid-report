@@ -2,6 +2,16 @@ module Mongoid
   module Report
 
     QueriesBuilder = Struct.new(:settings) do
+      def do
+        [].tap do |queries|
+          queries.concat([{ '$project' => query1 }])
+          queries.concat([{ '$group'   => query2 }])
+          queries.concat([{ '$project' => query3 }])
+        end
+      end
+
+      private
+
       def groups
         @group_by ||= begin
           if settings[:group_by].size == 0
@@ -60,14 +70,6 @@ module Mongoid
           fields.inject(query) do |hash, field|
             hash.merge!(field => 1)
           end
-        end
-      end
-
-      def do
-        [].tap do |queries|
-          queries.concat([{ '$project' => query1 }])
-          queries.concat([{ '$group'   => query2 }])
-          queries.concat([{ '$project' => query3 }])
         end
       end
     end
