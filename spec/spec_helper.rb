@@ -16,7 +16,7 @@ RSpec.configure do |config|
   config.backtrace_exclusion_patterns = [%r{lib\/rspec\/(core|expectations|matchers|mocks)}]
 end
 
-$LOAD_PATH.push File.expand_path('../../lib', __FILE__)
+require_relative '../lib/mongoid/report.rb'
 
 RSpec.configure do |config|
   require 'rspec/expectations'

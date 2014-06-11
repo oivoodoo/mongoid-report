@@ -68,3 +68,4 @@ DEPENDENCIES
   pry-debugger
   rake
   rspec
+  rspec-expectations

@@ -1,99 +1,22 @@
+require 'active_support/concern'
+require 'active_support/core_ext/class/attribute'
+
+require_relative 'report/queries_builder'
+require_relative 'report/attach_proxy'
+
 module Mongoid
   module Report
     extend ActiveSupport::Concern
 
     included do
+      extend ClassMethods
+
       class_attribute :settings
 
       self.settings = {}
 
       attr_reader :queries
 
-      include InstanceMethods
-    end
-
-    AttachProxy = Struct.new(:context, :collection) do
-      def aggregation_field(*fields)
-        context.aggregation_field(*fields, for: collection)
-      end
-
-      def group_by(*fields)
-        context.group_by(*fields, for: collection)
-      end
-    end
-
-    QueriesBuilder = Struct.new(:settings) do
-      def groups
-        @group_by ||= begin
-          if settings[:group_by].size == 0
-            [:_id]
-          else
-            settings[:group_by]
-          end
-        end
-      end
-
-      def fields
-        @fields ||= settings[:fields]
-      end
-
-      def all_fields
-        [:_id]
-          .concat(fields)
-          .concat(groups)
-      end
-
-      # Example: { '$project' => { :field1 => 1 } }
-      def query1
-        all_fields.inject({}) do |hash, field|
-          hash.merge!(field => 1)
-        end
-      end
-
-      GROUP_TEMPLATE = "$%s"
-      def query2
-        {}.tap do |query|
-          query[:_id] = {}
-
-          groups.inject(query[:_id]) do |hash, group|
-            hash.merge!(group => GROUP_TEMPLATE % group)
-          end
-
-          fields.inject(query) do |hash, field|
-            hash.merge!(field => { '$sum' => GROUP_TEMPLATE % field })
-          end
-        end
-      end
-
-      PROJECT_TEMPLATE = "$_id.%s"
-      def query3
-        {}.tap do |query|
-          if groups == [:_id]
-            query[:_id] = '$_id'
-          else
-            query[:_id] = 0
-
-            groups.inject(query) do |hash, group|
-              hash.merge!(group => PROJECT_TEMPLATE % group)
-            end
-          end
-
-          fields.inject(query) do |hash, field|
-            hash.merge!(field => 1)
-          end
-        end
-      end
-
-      def do
-        [].tap do |queries|
-          queries.concat([{ '$project' => query1 }])
-          queries.concat([{ '$group'   => query2 }])
-          queries.concat([{ '$project' => query3 }])
-        end
-      end
-    end
-
-    module InstanceMethods
       def initialize
         self.class.settings.each do |klass, configuration|
           builder = QueriesBuilder.new(configuration)
@@ -178,7 +101,6 @@ module Mongoid
       def settings_property(collection, key)
         settings.fetch(collection, {}).fetch(key, [])
       end
-
     end
 
   end

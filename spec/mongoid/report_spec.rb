@@ -13,9 +13,6 @@ describe Mongoid::Report do
   end
 
   class Report1
-    require 'pry'
-    binding.pry
-
     include Mongoid::Report
 
     aggregation_field :field1, for: Model
@@ -43,8 +40,7 @@ describe Mongoid::Report do
 
     it 'defines aggregation field for specific model to make queries' do
       fields = Report1.fields(Model)
-      expect(fields).to have(1).item
-      expect(fields).to include(:field1)
+      expect(fields).to eq([:field1])
     end
   end
 
@@ -58,14 +54,12 @@ describe Mongoid::Report do
 
   describe '.attach_to' do
     it 'defines method in report class to attach report to the model' do
-      expect { Report2.new }.to be
       expect(Report2).to be_respond_to(:attach_to)
     end
 
     it 'defines field in terms of attached model' do
       fields = Report2.fields(Model)
-      expect(fields).to have(1).item
-      expect(fields).to include(:field1)
+      expect(fields).to eq([:field1])
     end
   end
 
@@ -99,15 +93,14 @@ describe Mongoid::Report do
 
     it 'defines groups in terms of attached model' do
       groups = Report4.groups(Model)
-      expect(groups).to have(1).item
-      expect(groups).to include(:day)
+      expect(groups).to eq([:day])
     end
   end
 
   describe '.queries' do
     it 'builds queries for aggregation using default group _id field' do
       queries = Report1.new.queries
-      expect(queries).to have(3).items
+      expect(queries.size).to eq(3)
       expect(queries[0]).to eq(
         '$project' => {
           :_id    => 1,
@@ -127,7 +120,7 @@ describe Mongoid::Report do
 
     it 'builds queries using custom one group' do
       queries = Report4.new.queries
-      expect(queries).to have(3).items
+      expect(queries.size).to eq(3)
       expect(queries[0]).to eq(
         '$project' => {
           :_id    => 1,
@@ -159,7 +152,7 @@ describe Mongoid::Report do
 
     it 'builds queries using custom one group' do
       queries = Report5.new.queries
-      expect(queries).to have(3).items
+      expect(queries.size).to eq(3)
       expect(queries[0]).to eq(
         '$project' => {
           :_id    => 1,
