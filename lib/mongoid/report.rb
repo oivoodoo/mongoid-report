@@ -15,7 +15,7 @@ module Mongoid
 
       self.settings = {}
 
-      def initialize
+      def initialize_report_module
         self.class.settings.each do |klass, configuration|
           builder = QueriesBuilder.new(configuration)
 
@@ -28,6 +28,7 @@ module Mongoid
           configuration[:queries] = @queries
         end
       end
+      alias :initialize :initialize_report_module
 
       def queries(klass)
         self.class.settings[klass][:queries]
