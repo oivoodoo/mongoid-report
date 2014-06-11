@@ -49,7 +49,7 @@ framework.
 
 ```ruby
   example = Report4.new
-  result = example.aggregation_for(Model)
+  result = example.aggregate_for(Model)
 
   result.is_a?(Array) => true
   result[0].is_a?(Hash) => true

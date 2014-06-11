@@ -19,6 +19,8 @@ module Mongoid
         self.class.settings.each do |klass, configuration|
           builder = QueriesBuilder.new(configuration)
 
+          # Prepare group queries depends on the configuration in the included
+          # class.
           @queries = builder.do
 
           # Now we have access to compiled queries to run it in aggregation
