@@ -1,5 +1,4 @@
 module Mongoid
-
   module Report
 
     AttachProxy = Struct.new(:context, :collection) do
@@ -13,5 +12,4 @@ module Mongoid
     end
 
   end
-
 end

@@ -7,9 +7,9 @@ describe Mongoid::Report do
     let(:today) { Date.parse("20-12-2004") }
 
     it 'aggregates fields by default group _id as well' do
-      instance1 = klass.create!(day: today, field1: 1)
-      instance2 = klass.create!(day: today, field1: 1)
-      instance3 = klass.create!(day: yesterday, field1: 1)
+      instance1 = klass.create!(day: today     , field1: 1)
+      instance2 = klass.create!(day: today     , field1: 1)
+      instance3 = klass.create!(day: yesterday , field1: 1)
 
       example = Report2.new
       rows = example.aggregate_for(klass)
@@ -21,9 +21,9 @@ describe Mongoid::Report do
     end
 
     it 'aggregates field by defined field of the mode' do
-      klass.create!(day: today, field1: 1)
-      klass.create!(day: today, field1: 1)
-      klass.create!(day: yesterday, field1: 1)
+      klass.create!(day: today     , field1: 1)
+      klass.create!(day: today     , field1: 1)
+      klass.create!(day: yesterday , field1: 1)
 
       example = Report3.new
       rows = example.aggregate_for(klass)

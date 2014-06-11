@@ -3,6 +3,7 @@ require 'active_support/core_ext/class/attribute'
 
 require_relative 'report/queries_builder'
 require_relative 'report/attach_proxy'
+require_relative 'report/collection'
 
 module Mongoid
   module Report
@@ -40,7 +41,12 @@ module Mongoid
 
         yield queries if block_given?
 
-        klass.collection.aggregate(queries)
+        # Lets wrap aggregation by collection structure for adding common
+        # methods like summary for data.
+        Collection.new(
+          klass.collection.aggregate(queries),
+          self.class.fields(klass),
+        )
       end
     end
 
