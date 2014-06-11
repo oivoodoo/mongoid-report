@@ -36,7 +36,7 @@ module Mongoid
 
       # We should pass here mongoid document
       def aggregate_for(klass)
-        queries = queries(Model)
+        queries = queries(klass)
 
         yield queries if block_given?
 
