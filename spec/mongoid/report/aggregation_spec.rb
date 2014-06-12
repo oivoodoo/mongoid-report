@@ -13,6 +13,7 @@ describe Mongoid::Report do
 
       example = Report2.new
       rows = example.aggregate_for(klass)
+      rows = rows.all
 
       expect(rows.size).to eq(3)
       expect(rows[0]['field1']).to eq(1)
@@ -26,7 +27,9 @@ describe Mongoid::Report do
       klass.create!(day: yesterday , field1: 1)
 
       example = Report3.new
+
       rows = example.aggregate_for(klass)
+      rows = rows.all
 
       expect(rows.size).to eq(2)
       expect(rows[0]['field1']).to eq(1)
@@ -45,14 +48,13 @@ describe Mongoid::Report do
       klass.create(day: today        , field1: 1 , field2: 3)
 
       example = Report3.new
-      rows = example.aggregate_for(Model) do |queries|
-        # adding extra queries before the main
-        queries.unshift({ '$match' => { :day  => { '$gte' => yesterday.mongoize, '$lte' => today.mongoize } } })
-        queries.unshift({ '$match' => { :field2 => 2 } })
-        # adding sort to the end of aggregation query
-        queries.concat([{ '$sort' => { day: -1 } }])
-        queries
-      end
+      scope = example.aggregate_for(Model)
+      scope = scope.query('$match' => { :day  => { '$gte' => yesterday.mongoize, '$lte' => today.mongoize } })
+      scope = scope.query('$match' => { :field2 => 2 })
+      scope = scope.yield
+      scope = scope.query('$sort' => { day: -1 })
+
+      rows  = scope.all
 
       expect(rows.size).to eq(2)
       expect(rows[0]['field1']).to eq(2)

@@ -4,6 +4,7 @@ require 'active_support/core_ext/class/attribute'
 require_relative 'report/queries_builder'
 require_relative 'report/attach_proxy'
 require_relative 'report/collection'
+require_relative 'report/scope'
 
 module Mongoid
   module Report
@@ -36,17 +37,8 @@ module Mongoid
       end
 
       # We should pass here mongoid document
-      def aggregate_for(klass)
-        queries = queries(klass)
-
-        yield queries if block_given?
-
-        # Lets wrap aggregation by collection structure for adding common
-        # methods like summary for data.
-        Collection.new(
-          klass.collection.aggregate(queries),
-          self.class.fields(klass),
-        )
+      def aggregate_for(report_name)
+        Scope.new(self, report_name)
       end
     end
 
@@ -78,11 +70,24 @@ module Mongoid
         settings_property(collection, :group_by)
       end
 
+      def settings_property(collection, key)
+        settings.fetch(collection, {}).fetch(key, [])
+      end
+
       private
 
       def define_report_method(*fields)
         options = fields.extract_options!
 
+        # We should always have for option
+        report_name = initialize_settings_by(options)
+
+        # Because of modifying fields(usign exract options method of
+        # ActiveSupport) lets pass fields to the next block with collection.
+        yield fields, report_name
+      end
+
+      def initialize_settings_by(options)
         # We should always specify model to attach fields, groups
         collection = options.fetch(:for)
 
@@ -90,21 +95,15 @@ module Mongoid
         # collection class as key for settings.
         report_name = options.fetch(:as) { collection }
 
-        # We should always have for option
-        initialize_settings_by(report_name)
-
-        # Because of modifying fields(usign exract options method of
-        # ActiveSupport) lets pass fields to the next block with collection.
-        yield fields, report_name
-      end
-
-      def initialize_settings_by(report_name)
         settings[report_name] ||= settings.fetch(report_name) do
           {
+            for:       collection,
             fields:    [],
             group_by:  [],
           }
         end
+
+        report_name
       end
 
       def add_field(report_name, field)
@@ -117,9 +116,6 @@ module Mongoid
         FIELD
       end
 
-      def settings_property(collection, key)
-        settings.fetch(collection, {}).fetch(key, [])
-      end
     end
 
   end

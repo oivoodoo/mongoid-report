@@ -14,6 +14,7 @@ describe Mongoid::Report do
 
       example = Report3.new
       rows = example.aggregate_for(klass)
+      rows = rows.all
 
       expect(rows.count).to eq(2)
       expect(rows.summary[:field1]).to eq(3)

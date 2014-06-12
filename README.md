@@ -50,7 +50,7 @@ framework.
     end
   end
 
-  class Report4
+  class Report5
     include Mongoid::Report
 
     attach_to Model, as: 'summary-report' do
@@ -63,13 +63,16 @@ framework.
 
 ```ruby
   example = Report4.new
-  result = example.aggregate_for(Model)
+  scope = example.aggregate_for(Model)
+  scope = scope.query('match' => { 'field1' => 1 })
+  result = scope.all
 
   result.is_a?(Array) => true
   result[0].is_a?(Hash) => true
 
   example = Report5.new
-  result = example.aggregate_for('summary-report')
+  scope = example.aggregate_for('summary-report')
+  result = scope.all
 ```
 
 ## Installation
