@@ -4,9 +4,9 @@ module Mongoid
     QueriesBuilder = Struct.new(:settings) do
       def do
         [].tap do |queries|
-          queries.concat([{ '$project' => query1 }])
-          queries.concat([{ '$group'   => query2 }])
-          queries.concat([{ '$project' => query3 }])
+          queries.concat([{ '$project' => project_query }])
+          queries.concat([{ '$group'   => group_query }])
+          queries.concat([{ '$project' => project_group_fields_query }])
         end
       end
 
@@ -33,14 +33,14 @@ module Mongoid
       end
 
       # Example: { '$project' => { :field1 => 1 } }
-      def query1
+      def project_query
         all_fields.inject({}) do |hash, field|
           hash.merge!(field => 1)
         end
       end
 
       GROUP_TEMPLATE = "$%s"
-      def query2
+      def group_query
         {}.tap do |query|
           query[:_id] = {}
 
@@ -55,7 +55,7 @@ module Mongoid
       end
 
       PROJECT_TEMPLATE = "$_id.%s"
-      def query3
+      def project_group_fields_query
         {}.tap do |query|
           if groups == [:_id]
             query[:_id] = '$_id'
