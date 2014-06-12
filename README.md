@@ -3,6 +3,8 @@
 Library for easy building aggregation report using mongodb aggregation
 framework.
 
+[![Build Status](https://secure.travis-ci.org/oivoodoo/mongoid-report.png?branch=master)](https://travis-ci.org/oivoodoo/mongoid-report)
+
 ### Example
 
 ```ruby
