@@ -68,5 +68,4 @@ describe Mongoid::Report do
       expect(Report6.settings).to have_key('example1')
     end
   end
-
 end

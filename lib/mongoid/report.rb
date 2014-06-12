@@ -5,6 +5,7 @@ require_relative 'report/queries_builder'
 require_relative 'report/attach_proxy'
 require_relative 'report/collection'
 require_relative 'report/scope'
+require_relative 'report/scope_collection'
 
 module Mongoid
   module Report
@@ -39,6 +40,10 @@ module Mongoid
       # We should pass here mongoid document
       def aggregate_for(report_name)
         Scope.new(self, report_name)
+      end
+
+      def aggregate
+        ScopeCollection.new(self)
       end
     end
 
