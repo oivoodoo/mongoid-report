@@ -51,21 +51,21 @@ module Mongoid
     end
 
     module ClassMethods
-      def attach_to(collection, &block)
-        proxy = AttachProxy.new(self, collection)
+      def attach_to(collection, options = {}, &block)
+        proxy = AttachProxy.new(self, collection, options)
         proxy.instance_eval(&block)
       end
 
       def group_by(*fields)
-        define_report_method(*fields) do |groups, collection|
-          settings[collection][:group_by] = groups
+        define_report_method(*fields) do |groups, report_name|
+          settings[report_name][:group_by] = groups
         end
       end
 
       def aggregation_field(*fields)
-        define_report_method(*fields) do |columns, collection|
+        define_report_method(*fields) do |columns, report_name|
           columns.each do |column|
-            add_field(collection, column)
+            add_field(report_name, column)
           end
         end
       end
@@ -86,16 +86,20 @@ module Mongoid
         # We should always specify model to attach fields, groups
         collection = options.fetch(:for)
 
+        # If user didn't pass as option to name the report we are using
+        # collection class as key for settings.
+        report_name = options.fetch(:as) { collection }
+
         # We should always have for option
-        initialize_settings_by(collection)
+        initialize_settings_by(report_name)
 
         # Because of modifying fields(usign exract options method of
         # ActiveSupport) lets pass fields to the next block with collection.
-        yield fields, collection
+        yield fields, report_name
       end
 
-      def initialize_settings_by(collection)
-        settings[collection] ||= settings.fetch(collection) do
+      def initialize_settings_by(report_name)
+        settings[report_name] ||= settings.fetch(report_name) do
           {
             fields:    [],
             group_by:  [],
@@ -103,8 +107,8 @@ module Mongoid
         end
       end
 
-      def add_field(collection, field)
-        settings[collection][:fields] << field
+      def add_field(report_name, field)
+        settings[report_name][:fields] << field
 
         class_eval <<-FIELD
           def #{field}

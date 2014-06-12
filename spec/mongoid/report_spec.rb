@@ -55,4 +55,18 @@ describe Mongoid::Report do
     end
   end
 
+  class Report6
+    include Mongoid::Report
+
+    attach_to Model, as: 'example1' do
+      aggregation_field :field1
+    end
+  end
+
+  describe '.as' do
+    it 'creates settings with "as" name' do
+      expect(Report6.settings).to have_key('example1')
+    end
+  end
+
 end
