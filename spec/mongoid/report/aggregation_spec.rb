@@ -62,5 +62,20 @@ describe Mongoid::Report do
       expect(rows[1]['field1']).to eq(1)
       expect(rows[1]['day']).to eq(yesterday)
     end
+
+    it 'skips empty match in query' do
+      klass.create(day: today , field1: 1 , field2: 2)
+
+      example = Report3.new
+      scope = example.aggregate_for(Model)
+      scope = scope.query()
+      scope = scope.query({})
+
+      rows  = scope.all
+
+      expect(rows.size).to eq(1)
+      expect(rows[0]['field1']).to eq(1)
+      expect(rows[0]['day']).to eq(today)
+    end
   end
 end

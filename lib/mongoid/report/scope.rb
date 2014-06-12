@@ -2,8 +2,8 @@ module Mongoid
   module Report
 
     Scope = Struct.new(:context, :report_name) do
-      def query(conditions)
-        queries.concat([conditions])
+      def query(conditions = {})
+        queries.concat([conditions]) unless conditions.empty?
         self
       end
 
