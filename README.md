@@ -45,6 +45,16 @@ framework.
       aggregation_field :field1
     end
   end
+
+  class Report4
+    include Mongoid::Report
+
+    attach_to Model, as: 'summary-report' do
+      group_by :day
+
+      aggregation_field :field1
+    end
+  end
 ```
 
 ```ruby
@@ -53,6 +63,9 @@ framework.
 
   result.is_a?(Array) => true
   result[0].is_a?(Hash) => true
+
+  example = Report5.new
+  result = example.aggregate_for('summary-report')
 ```
 
 ## Installation
@@ -67,11 +80,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install mongoid_report
-
-## Usage
-
-TODO: Write usage instructions here
+    $ gem install mongoid-report
 
 ## Contributing
 
