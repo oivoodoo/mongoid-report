@@ -16,7 +16,6 @@ GEM
     builder (3.0.4)
     coderay (1.1.0)
     columnize (0.3.6)
-    database_cleaner (1.2.0)
     debugger (1.6.6)
       columnize (>= 0.3.1)
       debugger-linecache (~> 1.2.0)
@@ -62,10 +61,8 @@ PLATFORMS
 
 DEPENDENCIES
   bundler (~> 1.5)
-  database_cleaner
   mongoid-report!
   pry
   pry-debugger
   rake
   rspec
-  rspec-expectations
