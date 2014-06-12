@@ -5,6 +5,8 @@ framework.
 
 [![Build Status](https://secure.travis-ci.org/oivoodoo/mongoid-report.png?branch=master)](https://travis-ci.org/oivoodoo/mongoid-report)
 
+[![Code Climate](https://codeclimate.com/badge.png)](https://codeclimate.com/github/oivoodoo/mongoid-report)
+
 ### Example
 
 ```ruby
