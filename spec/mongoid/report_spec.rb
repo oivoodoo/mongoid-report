@@ -68,4 +68,25 @@ describe Mongoid::Report do
       expect(Report6.settings).to have_key('example1')
     end
   end
+
+  class Report7
+    include Mongoid::Report
+
+    report 'example' do
+      attach_to Model, as: 'model1' do
+        aggregation_field :field1
+      end
+
+      attach_to Model do
+        aggregation_field :field1
+      end
+    end
+  end
+
+  describe '.report' do
+    it 'creates settings with report-<attached-model-name' do
+      expect(Report7.settings).to have_key('example-model1')
+      expect(Report7.settings).to have_key("example-#{Model.collection.name}")
+    end
+  end
 end

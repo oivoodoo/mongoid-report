@@ -6,6 +6,7 @@ require_relative 'report/attach_proxy'
 require_relative 'report/collection'
 require_relative 'report/scope'
 require_relative 'report/scope_collection'
+require_relative 'report/report_proxy'
 
 module Mongoid
   module Report
@@ -65,6 +66,11 @@ module Mongoid
             add_field(report_name, column)
           end
         end
+      end
+
+      def report(name, &block)
+        proxy = ReportProxy.new(self, name)
+        proxy.instance_eval(&block)
       end
 
       def fields(collection)
