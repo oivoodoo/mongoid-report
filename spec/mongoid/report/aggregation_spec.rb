@@ -121,6 +121,51 @@ describe Mongoid::Report do
       expect(rows[1]['field2']).to eq(2)
       expect(rows[1]['day']).to eq(yesterday)
     end
+
+    class Report8
+      include Mongoid::Report
+
+      report 'example' do
+        attach_to Model, as: 'model1' do
+          group_by :day
+          aggregation_field :field1
+        end
+
+        attach_to Model, as: 'model2' do
+          group_by :day
+          aggregation_field :field2
+        end
+      end
+    end
+
+    it 'should still aggregate with combined report' do
+      klass.create(day: today        , field1: 1 , field2: 2)
+      klass.create(day: today        , field1: 1 , field2: 2)
+      klass.create(day: yesterday    , field1: 1 , field2: 2)
+      klass.create(day: two_days_ago , field1: 1 , field2: 2)
+
+      example = Report8.new
+      scope = example.aggregate
+      scope
+        .query('$match' => { :day  => { '$gte' => yesterday.mongoize, '$lte' => today.mongoize } })
+        .yield
+        .query('$sort' => { day: -1 })
+      scope = scope.all
+
+      rows = scope['example-model1']
+      expect(rows.size).to eq(2)
+      expect(rows[0]['field1']).to eq(2)
+      expect(rows[0]['day']).to eq(today)
+      expect(rows[1]['field1']).to eq(1)
+      expect(rows[1]['day']).to eq(yesterday)
+
+      rows = scope['example-model2']
+      expect(rows.size).to eq(2)
+      expect(rows[0]['field2']).to eq(4)
+      expect(rows[0]['day']).to eq(today)
+      expect(rows[1]['field2']).to eq(2)
+      expect(rows[1]['day']).to eq(yesterday)
+    end
   end
 
 end
