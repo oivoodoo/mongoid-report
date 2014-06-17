@@ -19,7 +19,7 @@ describe Mongoid::Report::QueriesBuilder do
       expect(queries[2]).to eq(
         '$project' => {
           :_id    => '$_id',
-          :field1 => 1,
+          :field1 => '$field1',
         })
     end
 
@@ -41,7 +41,7 @@ describe Mongoid::Report::QueriesBuilder do
         '$project' => {
           :_id    => 0,
           :day    => '$_id.day',
-          :field1 => 1,
+          :field1 => '$field1',
         })
     end
 
@@ -77,8 +77,8 @@ describe Mongoid::Report::QueriesBuilder do
           :_id    => 0,
           :day    => '$_id.day',
           :field2 => '$_id.field2',
-          :field1 => 1,
-          :field3 => 1,
+          :field1 => '$field1',
+          :field3 => '$field3',
         })
     end
   end

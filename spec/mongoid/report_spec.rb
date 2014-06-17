@@ -3,28 +3,13 @@ require 'spec_helper'
 describe Mongoid::Report do
 
   describe '.aggregation_field' do
-    it 'defines field for aggregation using class method' do
-      example = Report1.new
-      expect(example).to be_respond_to(:field1)
-    end
-
-    it 'defines as reader only' do
-      example = Report1.new
-      expect{ example.field1 = 'value' }.to raise_error
-    end
-
-    it 'defines field with 0 by default' do
-      example = Report1.new
-      expect(example.field1).to eq(0)
-    end
-
     it 'defines aggegration settings' do
       expect(Report1).to be_respond_to(:settings)
     end
 
     it 'defines aggregation field for specific model to make queries' do
       fields = Report1.fields(Model)
-      expect(fields).to eq([:field1])
+      expect(fields).to eq({ field1: :field1 })
     end
   end
 
@@ -35,7 +20,7 @@ describe Mongoid::Report do
 
     it 'defines field in terms of attached model' do
       fields = Report2.fields(Model)
-      expect(fields).to eq([:field1])
+      expect(fields).to eq({ field1: :field1 })
     end
   end
 
@@ -87,6 +72,19 @@ describe Mongoid::Report do
     it 'creates settings with report-<attached-model-name' do
       expect(Report7.settings).to have_key('example-model1')
       expect(Report7.settings).to have_key("example-#{Model.collection.name}")
+    end
+  end
+
+  class Report10
+    include Mongoid::Report
+
+    aggregation_field :field1, for: Model, as: 'field-name'
+  end
+
+  describe '.aggregation_field `as` option' do
+    it 'creates settings with report-<attached-model-name' do
+      expect(Report10.fields(Model).keys).to eq([:field1])
+      expect(Report10.fields(Model).values).to eq(['field-name'])
     end
   end
 end

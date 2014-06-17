@@ -49,40 +49,43 @@ module Mongoid
     end
 
     module ClassMethods
+      def report(name, &block)
+        proxy = ReportProxy.new(self, name)
+        proxy.instance_eval(&block)
+      end
+
       def attach_to(collection, options = {}, &block)
         proxy = AttachProxy.new(self, collection, options)
         proxy.instance_eval(&block)
       end
 
       def group_by(*fields)
-        define_report_method(*fields) do |groups, report_name|
+        define_report_method(*fields) do |groups, report_name, _|
           settings[report_name][:group_by] = groups
         end
       end
 
       def aggregation_field(*fields)
-        define_report_method(*fields) do |columns, report_name|
+        define_report_method(*fields) do |columns, report_name, options|
           columns.each do |column|
-            add_field(report_name, column)
+            name = options.fetch(:as) { column }
+            add_field(report_name, column, name)
           end
         end
       end
 
-      def report(name, &block)
-        proxy = ReportProxy.new(self, name)
-        proxy.instance_eval(&block)
-      end
-
       def fields(collection)
-        settings_property(collection, :fields)
+        settings_property(collection, :fields, {})
       end
 
       def groups(collection)
-        settings_property(collection, :group_by)
+        settings_property(collection, :group_by, [])
       end
 
-      def settings_property(collection, key)
-        settings.fetch(collection, {}).fetch(key, [])
+      def settings_property(collection, key, default = [])
+        settings
+          .fetch(collection) { {} }
+          .fetch(key) { default }
       end
 
       private
@@ -90,41 +93,33 @@ module Mongoid
       def define_report_method(*fields)
         options = fields.extract_options!
 
-        # We should always have for option
-        report_name = initialize_settings_by(options)
-
-        # Because of modifying fields(usign exract options method of
-        # ActiveSupport) lets pass fields to the next block with collection.
-        yield fields, report_name
-      end
-
-      def initialize_settings_by(options)
         # We should always specify model to attach fields, groups
         collection = options.fetch(:for)
 
         # If user didn't pass as option to name the report we are using
         # collection class as key for settings.
-        report_name = options.fetch(:as) { collection }
+        attach_name = options.fetch(:attach_name) { collection }
 
-        settings[report_name] ||= settings.fetch(report_name) do
+        # We should always have for option
+        initialize_settings_by(attach_name, collection)
+
+        # Because of modifying fields(usign exract options method of
+        # ActiveSupport) lets pass fields to the next block with collection.
+        yield fields, attach_name, options || {}
+      end
+
+      def initialize_settings_by(attach_name, collection)
+        settings[attach_name] ||= settings.fetch(attach_name) do
           {
             for:       collection,
-            fields:    [],
+            fields:    {},
             group_by:  [],
           }
         end
-
-        report_name
       end
 
-      def add_field(report_name, field)
-        settings[report_name][:fields] << field
-
-        class_eval <<-FIELD
-          def #{field}
-            @#{field} ||= 0
-          end
-        FIELD
+      def add_field(attach_name, field, name)
+        settings[attach_name][:fields][field] = name
       end
 
     end

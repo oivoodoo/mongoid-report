@@ -26,9 +26,17 @@ module Mongoid
         @fields ||= settings[:fields]
       end
 
+      def in_fields
+        @in_fields ||= fields.keys
+      end
+
+      def output_fields
+        @output_fields ||= fields.values
+      end
+
       def all_fields
         [:_id]
-          .concat(fields)
+          .concat(in_fields)
           .concat(groups)
       end
 
@@ -48,7 +56,7 @@ module Mongoid
             hash.merge!(group => GROUP_TEMPLATE % group)
           end
 
-          fields.inject(query) do |hash, field|
+          in_fields.inject(query) do |hash, field|
             hash.merge!(field => { '$sum' => GROUP_TEMPLATE % field })
           end
         end
@@ -67,8 +75,8 @@ module Mongoid
             end
           end
 
-          fields.inject(query) do |hash, field|
-            hash.merge!(field => 1)
+          fields.inject(query) do |hash, (field, name)|
+            hash.merge!(name => "$#{field}")
           end
         end
       end

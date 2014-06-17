@@ -37,7 +37,9 @@ module Mongoid
       end
 
       def fields
-        context.class.settings_property(report_name, :fields)
+        # We need to use here only output field names it could be different
+        # than defined colunms, Example: field1: 'report-field-name'
+        context.class.settings_property(report_name, :fields).values
       end
     end
 
