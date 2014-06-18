@@ -87,4 +87,5 @@ describe Mongoid::Report do
       expect(Report10.fields(Model).values).to eq(['field-name'])
     end
   end
+
 end

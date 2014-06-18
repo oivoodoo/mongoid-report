@@ -213,4 +213,76 @@ describe Mongoid::Report do
     end
   end
 
+  class Report15
+    include Mongoid::Report
+
+    filter field2: 2, for: Model
+    aggregation_field :field1, for: Model
+  end
+
+  describe '.filter' do
+    it 'creates filter' do
+      klass.create(field1: 1, field2: 2)
+      klass.create(field1: 3, field2: 4)
+
+      example = Report15.new
+      scope = example.aggregate
+      scope = scope.all
+
+      rows = scope[Model]
+      expect(rows.size).to eq(1)
+      expect(rows[0]['field1']).to eq(1)
+    end
+
+    class Report16
+      include Mongoid::Report
+
+      report 'example' do
+        attach_to Model do
+          filter field2: 2
+          aggregation_field :field1
+        end
+      end
+    end
+
+    it 'creates filter in report scope' do
+      klass.create(field1: 1, field2: 2)
+      klass.create(field1: 3, field2: 4)
+
+      example = Report16.new
+      scope = example.aggregate
+      scope = scope.all
+
+      rows = scope['example-models']
+      expect(rows.size).to eq(1)
+      expect(rows[0]['field1']).to eq(1)
+    end
+
+    class Report17
+      include Mongoid::Report
+
+      report 'example' do
+        attach_to Model do
+          filter field2: 2,
+                 day: -> { Date.parse("20-12-2004").mongoize }
+          aggregation_field :field1
+        end
+      end
+    end
+
+    it 'creates filter in report scope' do
+      klass.create(day: today     , field1: 1 , field2: 2)
+      klass.create(day: yesterday , field1: 1 , field2: 2)
+      klass.create(day: today     , field1: 3 , field2: 4)
+
+      example = Report17.new
+      scope = example.aggregate
+      scope = scope.all
+
+      rows = scope['example-models']
+      expect(rows.size).to eq(1)
+      expect(rows[0]['field1']).to eq(1)
+    end
+  end
+
 end

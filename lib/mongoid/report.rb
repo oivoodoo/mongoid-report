@@ -29,7 +29,7 @@ module Mongoid
 
           # Now we have access to compiled queries to run it in aggregation
           # framework.
-          configuration[:queries] = @queries
+          configuration[:queries].concat(@queries)
         end
       end
       alias :initialize :initialize_report_module
@@ -57,6 +57,20 @@ module Mongoid
       def attach_to(collection, options = {}, &block)
         proxy = AttachProxy.new(self, collection, options)
         proxy.instance_eval(&block)
+      end
+
+      def filter(*fields)
+        define_report_method(*fields) do |_, report_name, options|
+          queries = self.settings_property(report_name, :queries)
+
+          options.each do |key, value|
+            value = value.call if value.respond_to?(:call)
+              queries
+                .concat([{
+                  '$match' => { key => value }
+                }])
+          end
+        end
       end
 
       def group_by(*fields)
@@ -95,10 +109,12 @@ module Mongoid
 
         # We should always specify model to attach fields, groups
         collection = options.fetch(:for)
+        options.delete(:for)
 
         # If user didn't pass as option to name the report we are using
         # collection class as key for settings.
         attach_name = options.fetch(:attach_name) { collection }
+        options.delete(:attach_name)
 
         # We should always have for option
         initialize_settings_by(attach_name, collection)
@@ -114,6 +130,7 @@ module Mongoid
             for:       collection,
             fields:    {},
             group_by:  [],
+            queries:   [],
           }
         end
       end

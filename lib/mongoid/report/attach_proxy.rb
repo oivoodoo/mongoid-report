@@ -24,6 +24,13 @@ module Mongoid
 
         context.group_by(*fields, group_options)
       end
+
+      def filter(*fields)
+        filter_options = fields.extract_options!
+        filter_options.merge!(options)
+
+        context.filter(*fields, filter_options)
+      end
     end
 
   end
