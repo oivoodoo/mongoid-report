@@ -92,6 +92,7 @@ Or install it yourself as:
 ## Contributors
 
   @oivoodoo
+
   @baltazore
 
 ## Contributing
