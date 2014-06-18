@@ -89,6 +89,11 @@ Or install it yourself as:
 
     $ gem install mongoid-report
 
+## Contributors
+
+  @oivoodoo
+  @baltazore
+
 ## Contributing
 
 1. Fork it ( http://github.com/oivoodoo/mongoid-report/fork )
