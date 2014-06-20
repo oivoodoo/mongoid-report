@@ -264,7 +264,7 @@ describe Mongoid::Report do
       report 'example' do
         attach_to Model do
           filter field2: 2,
-                 day: -> { Date.parse("20-12-2004").mongoize }
+                 day: ->(context) { Date.parse("20-12-2004").mongoize }
           aggregation_field :field1
         end
       end
@@ -282,6 +282,38 @@ describe Mongoid::Report do
       rows = scope['example-models']
       expect(rows.size).to eq(1)
       expect(rows[0]['field1']).to eq(1)
+    end
+
+    class Report18
+      include Mongoid::Report
+
+      def values
+        [1, 2]
+      end
+
+      report 'example' do
+        attach_to Model do
+          group_by :day
+          filter field2: ->(context) { { '$in' => context.values } }
+          aggregation_field :field1
+        end
+      end
+    end
+
+    it 'creates filter in report scope' do
+      klass.create(day: today     , field1: 1 , field2: 2)
+      klass.create(day: today     , field1: 1 , field2: 2)
+      klass.create(day: yesterday , field1: 1 , field2: 2)
+      klass.create(day: today     , field1: 3 , field2: 4)
+
+      example = Report18.new
+      scope = example.aggregate
+      scope = scope.all
+
+      rows = scope['example-models']
+      expect(rows.size).to eq(2)
+      expect(rows[0]['field1']).to eq(1)
+      expect(rows[1]['field1']).to eq(2)
     end
   end
 

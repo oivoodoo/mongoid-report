@@ -64,11 +64,10 @@ module Mongoid
           queries = self.settings_property(report_name, :queries)
 
           options.each do |key, value|
-            value = value.call if value.respond_to?(:call)
-              queries
-                .concat([{
-                  '$match' => { key => value }
-                }])
+            queries
+              .concat([{
+                '$match' => { key => value }
+              }])
           end
         end
       end

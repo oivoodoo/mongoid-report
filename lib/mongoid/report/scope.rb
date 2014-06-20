@@ -19,10 +19,24 @@ module Mongoid
 
       def all
         self.yield unless yielded?
+        queries = compile_queries
         Collection.new(klass.collection.aggregate(queries), fields)
       end
 
       private
+
+      def compile_queries
+        queries.dup.map do |query|
+          query.each do |function_name, values|
+            values.each do |name, value|
+              value = value.call(context) if value.respond_to?(:call)
+              query[function_name][name] = value
+            end
+          end
+
+          query
+        end
+      end
 
       def yielded?
         @yielded
