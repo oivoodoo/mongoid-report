@@ -4,10 +4,12 @@ module Mongoid
   module Report
 
     class Collection < SimpleDelegator
-      def initialize(rows, fields)
-        @rows   = rows
-        @fields = fields
+      def initialize(rows, fields, columns)
+        @rows    = rows
+        @fields  = fields
+        @columns = columns
         super(rows)
+        compile_dynamic_fields(columns)
       end
 
       def summary
@@ -17,6 +19,16 @@ module Mongoid
           end
 
           summary
+        end
+      end
+
+      private
+
+      def compile_dynamic_fields(columns)
+        self.each do |row|
+          @columns.each do |name, function|
+            row[name] = function.call(row)
+          end
         end
       end
     end

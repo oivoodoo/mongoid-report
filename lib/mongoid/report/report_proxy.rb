@@ -5,7 +5,7 @@ module Mongoid
       def attach_to(model, options = {}, &block)
         as = options.fetch(:as) { model.collection.name }
 
-        options.merge!(as: "#{name}-#{as}") if as
+        options.merge!(as: "#{name}-#{as}")
 
         context.attach_to(model, options, &block)
       end

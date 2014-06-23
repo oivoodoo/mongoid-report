@@ -12,24 +12,27 @@ module Mongoid
       end
 
       def aggregation_field(*fields)
-        field_options = fields.extract_options!
-        field_options.merge!(options)
-
-        context.aggregation_field(*fields, field_options)
+        proxy_options = fields.extract_options!
+        proxy_options.merge!(options)
+        context.aggregation_field(*fields, proxy_options)
       end
 
       def group_by(*fields)
-        group_options = fields.extract_options!
-        group_options.merge!(options)
-
-        context.group_by(*fields, group_options)
+        proxy_options = fields.extract_options!
+        proxy_options.merge!(options)
+        context.group_by(*fields, proxy_options)
       end
 
       def filter(*fields)
-        filter_options = fields.extract_options!
-        filter_options.merge!(options)
+        proxy_options = fields.extract_options!
+        proxy_options.merge!(options)
+        context.filter(*fields, proxy_options)
+      end
 
-        context.filter(*fields, filter_options)
+      def column(*fields)
+        proxy_options = fields.extract_options!
+        proxy_options.merge!(options)
+        context.column(*fields, proxy_options)
       end
     end
 

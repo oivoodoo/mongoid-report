@@ -20,7 +20,7 @@ module Mongoid
       def all
         self.yield unless yielded?
         queries = compile_queries
-        Collection.new(klass.collection.aggregate(queries), fields)
+        Collection.new(klass.collection.aggregate(queries), fields, columns)
       end
 
       private
@@ -54,6 +54,10 @@ module Mongoid
         # We need to use here only output field names it could be different
         # than defined colunms, Example: field1: 'report-field-name'
         context.class.settings_property(report_name, :fields).values
+      end
+
+      def columns
+        context.class.settings_property(report_name, :columns)
       end
     end
 

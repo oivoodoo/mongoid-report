@@ -87,6 +87,16 @@ module Mongoid
         end
       end
 
+      def column(*fields)
+        # Because of representing fields as hash instead of columns we should
+        # have the last variable as columns.
+        define_report_method(*fields) do |_, report_name, columns|
+          columns.each do |name, function|
+            add_column(report_name, name, function)
+          end
+        end
+      end
+
       def fields(collection)
         settings_property(collection, :fields, {})
       end
@@ -127,15 +137,20 @@ module Mongoid
         settings[attach_name] ||= settings.fetch(attach_name) do
           {
             for:       collection,
-            fields:    {},
+            fields:    ActiveSupport::OrderedHash.new,
             group_by:  [],
             queries:   [],
+            columns:   ActiveSupport::OrderedHash.new,
           }
         end
       end
 
       def add_field(attach_name, field, name)
         settings[attach_name][:fields][field] = name
+      end
+
+      def add_column(attach_name, name, function)
+        settings[attach_name][:columns][name] = function
       end
 
     end
