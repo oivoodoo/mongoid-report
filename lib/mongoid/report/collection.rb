@@ -19,7 +19,7 @@ module Mongoid
           end
 
           summary
-        end
+        end.with_indifferent_access
       end
 
       private

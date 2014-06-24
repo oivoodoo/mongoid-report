@@ -18,6 +18,7 @@ describe Mongoid::Report do
 
       expect(rows.count).to eq(2)
       expect(rows.summary[:field1]).to eq(3)
+      expect(rows.summary['field1']).to eq(3)
     end
   end
 
