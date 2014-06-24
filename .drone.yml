@@ -1,0 +1,16 @@
+image: bradrydzewski/ruby:1.9.3
+script:
+  - gem install bundler --no-ri --no-rdoc
+  - bundle install
+  - bundle exec rake default
+services:
+  - mongodb
+notify:
+  email:
+    recipients:
+      - alex.korsak@gmail.com
+  flowdock:
+    flow_token: $FLOW_TOKEN
+    on_started: true
+    on_success: true
+    on_failure: true
