@@ -1,7 +1,14 @@
+require 'thread'
+
 module Mongoid
   module Report
 
     ScopeCollection = Struct.new(:context) do
+      def initialize(context)
+        @mutex = Mutex.new
+        super
+      end
+
       def scopes
         @scopes ||= modules.map do |key|
           Scope.new(context, key)
@@ -27,7 +34,11 @@ module Mongoid
           if Mongoid::Report::Config.use_threads_on_aggregate
             scopes.map do |scope|
               Thread.new do
-                hash[scope.report_name] = scope.all
+                rows = scope.all
+
+                @mutex.synchronize do
+                  hash[scope.report_name] = rows
+                end
               end
             end.map(&:join)
           else
