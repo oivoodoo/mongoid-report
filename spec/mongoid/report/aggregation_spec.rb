@@ -7,19 +7,25 @@ describe Mongoid::Report do
   let(:two_days_ago) { Date.parse("18-12-2004") }
 
   describe '.aggregate_for' do
-    it 'aggregates fields by default group _id as well' do
-      instance1 = klass.create!(day: today     , field1: 1)
-      instance2 = klass.create!(day: today     , field1: 1)
-      instance3 = klass.create!(day: yesterday , field1: 1)
+    it 'aggregates fields by app' do
+      Report = Class.new do
+        include Mongoid::Report
 
-      example = Report2.new
+        attach_to Model do
+          aggregation_field :field1
+        end
+      end
+
+      klass.create!(field1: 1)
+      klass.create!(field1: 1)
+      klass.create!(field1: 1)
+
+      example = Report.new
       rows = example.aggregate_for(klass)
       rows = rows.all
 
-      expect(rows.size).to eq(3)
-      expect(rows[0]['field1']).to eq(1)
-      expect(rows[1]['field1']).to eq(1)
-      expect(rows[2]['field1']).to eq(1)
+      expect(rows.size).to eq(1)
+      expect(rows[0]['field1']).to eq(3)
     end
 
     it 'aggregates field by defined field of the mode' do

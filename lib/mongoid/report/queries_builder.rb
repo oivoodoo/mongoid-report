@@ -13,13 +13,7 @@ module Mongoid
       private
 
       def groups
-        @group_by ||= begin
-          if settings[:group_by].size == 0
-            [:_id]
-          else
-            settings[:group_by]
-          end
-        end
+        @group_by ||= settings.fetch(:group_by, [])
       end
 
       def fields

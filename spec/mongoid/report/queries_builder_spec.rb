@@ -3,7 +3,7 @@ require 'spec_helper'
 describe Mongoid::Report::QueriesBuilder do
 
   describe '.queries' do
-    it 'builds queries for aggregation using default group _id field' do
+    it 'builds queries for aggregation' do
       queries = Report1.new.queries(Model)
       expect(queries.size).to eq(3)
       expect(queries[0]).to eq(
@@ -13,12 +13,12 @@ describe Mongoid::Report::QueriesBuilder do
         })
       expect(queries[1]).to eq(
         '$group' => {
-          :_id    => { :_id => '$_id' },
+          :_id    => { },
           :field1 => { '$sum'  => '$field1' },
         })
       expect(queries[2]).to eq(
         '$project' => {
-          :_id    => '$_id',
+          :_id    => 0,
           :field1 => '$field1',
         })
     end
