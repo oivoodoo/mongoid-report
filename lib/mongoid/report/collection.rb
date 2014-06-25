@@ -8,8 +8,13 @@ module Mongoid
         @rows    = rows
         @fields  = fields
         @columns = columns
+
+        # Apply dyncamic columns in context of row and apply indifferent access
+        # for the rows.
+        rows = compile_dynamic_fields(rows, columns)
+
+        # Collection should behave like Array using delegator method.
         super(rows)
-        compile_dynamic_fields(columns)
       end
 
       def summary
@@ -24,11 +29,13 @@ module Mongoid
 
       private
 
-      def compile_dynamic_fields(columns)
-        self.each do |row|
+      def compile_dynamic_fields(rows, columns)
+        rows.map do |row|
           @columns.each do |name, function|
             row[name] = function.call(row)
           end
+
+          row.with_indifferent_access
         end
       end
     end

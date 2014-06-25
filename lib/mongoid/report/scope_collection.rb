@@ -23,9 +23,18 @@ module Mongoid
       end
 
       def all
-        scopes.inject({}) do |hash, scope|
-          hash[scope.report_name] = scope.all
-          hash
+        {}.tap do |hash|
+          if Mongoid::Report::Config.use_threads_on_aggregate
+            scopes.map do |scope|
+              Thread.new do
+                hash[scope.report_name] = scope.all
+              end
+            end.map(&:join)
+          else
+            scopes.each do |scope|
+              hash[scope.report_name] = scope.all
+            end
+          end
         end
       end
 

@@ -1,6 +1,7 @@
 require 'active_support/concern'
 require 'active_support/core_ext/class/attribute'
 
+require_relative 'report/config'
 require_relative 'report/queries_builder'
 require_relative 'report/attach_proxy'
 require_relative 'report/collection'
