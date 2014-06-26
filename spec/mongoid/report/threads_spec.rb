@@ -17,7 +17,7 @@ describe Mongoid::Report do
       end
     end
 
-    20000.times { klass.create!(field1: 1, field2: 1) }
+    30000.times { klass.create!(field1: 1, field2: 1) }
 
     report = Report.new
     scoped = report.aggregate

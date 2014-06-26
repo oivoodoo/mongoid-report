@@ -20,6 +20,14 @@ module Mongoid
 
       self.settings = {}
 
+      def inherited(subclass)
+        subclass.class_eval do
+          class_attribute :settings
+
+          self.settings = {}
+        end
+      end
+
       def initialize_report_module
         self.class.settings.each do |klass, configuration|
           builder = QueriesBuilder.new(configuration)

@@ -88,4 +88,46 @@ describe Mongoid::Report do
     end
   end
 
+
+  describe 'two report classes' do
+    it 'should have different settings' do
+      ReportKlass1 = Class.new do
+        include Mongoid::Report
+
+        attach_to Model do
+          aggregation_field :field1
+        end
+      end
+
+      ReportKlass2 = Class.new do
+        include Mongoid::Report
+
+        attach_to Model do
+          aggregation_field :field2
+        end
+      end
+
+      expect(ReportKlass1.settings).not_to eq(ReportKlass2.settings)
+    end
+
+    class ReportKlass
+      include Mongoid::Report
+    end
+
+    class ReportKlass1 < ReportKlass
+      attach_to Model do
+        aggregation_field :field2
+      end
+    end
+
+    class ReportKlass2 < ReportKlass
+      attach_to Model do
+        aggregation_field :field2
+      end
+    end
+
+    it 'should have different settings for inherited classes' do
+      expect(ReportKlass1.fields(Model)).not_to eq(ReportKlass2.fields(Model))
+    end
+  end
 end
