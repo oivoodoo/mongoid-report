@@ -26,6 +26,8 @@ module Mongoid
 
       def initialize_report_module
         self.class.settings.each do |klass, configuration|
+          next if configuration[:compiled]
+
           builder = QueriesBuilder.new(configuration)
 
           # Prepare group queries depends on the configuration in the included
@@ -35,6 +37,7 @@ module Mongoid
           # Now we have access to compiled queries to run it in aggregation
           # framework.
           configuration[:queries].concat(@queries)
+          configuration[:compiled] = true
         end
       end
       alias :initialize :initialize_report_module
@@ -145,6 +148,7 @@ module Mongoid
             fields:    ActiveSupport::OrderedHash.new,
             group_by:  [],
             queries:   [],
+            compiled:  false,
             columns:   ActiveSupport::OrderedHash.new,
           }
         end
