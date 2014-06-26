@@ -24,10 +24,16 @@ module Mongoid
         subclass.settings = self.settings.dup
       end
 
-      def initialize_report_module
-        self.class.settings.each do |klass, configuration|
-          next if configuration[:compiled]
+      # Variable for copying internal class settings to the instance because of
+      # possible modifications in case of using filters with lambda
+      # expressions.
+      attr_reader :report_module_settings
 
+      def initialize_report_module
+        # Lets store settings under created instance.
+        @report_module_settings = self.class.settings.dup
+
+        @report_module_settings.each do |klass, configuration|
           builder = QueriesBuilder.new(configuration)
 
           # Prepare group queries depends on the configuration in the included
@@ -37,13 +43,12 @@ module Mongoid
           # Now we have access to compiled queries to run it in aggregation
           # framework.
           configuration[:queries].concat(@queries)
-          configuration[:compiled] = true
         end
       end
       alias :initialize :initialize_report_module
 
       def queries(klass)
-        self.class.settings[klass][:queries]
+        @report_module_settings[klass][:queries]
       end
 
       # We should pass here mongoid document

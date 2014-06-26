@@ -26,8 +26,8 @@ module Mongoid
       private
 
       def compile_queries
-        queries.dup.map do |query|
-          query.each do |function_name, values|
+        queries.map do |query|
+          query.deep_dup.each do |function_name, values|
             values.each do |name, value|
               value = value.call(context) if value.respond_to?(:call)
               query[function_name][name] = value
@@ -47,17 +47,17 @@ module Mongoid
       end
 
       def klass
-        context.class.settings_property(report_name, :for)
+        context.report_module_settings[report_name][:for]
       end
 
       def fields
         # We need to use here only output field names it could be different
         # than defined colunms, Example: field1: 'report-field-name'
-        context.class.settings_property(report_name, :fields).values
+        context.report_module_settings[report_name][:fields].values
       end
 
       def columns
-        context.class.settings_property(report_name, :columns)
+        context.report_module_settings[report_name][:columns]
       end
     end
 
