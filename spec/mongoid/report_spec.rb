@@ -116,7 +116,7 @@ describe Mongoid::Report do
 
     class ReportKlass1 < ReportKlass
       attach_to Model do
-        aggregation_field :field2
+        aggregation_field :field1
       end
     end
 

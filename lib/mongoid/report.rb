@@ -20,12 +20,8 @@ module Mongoid
 
       self.settings = {}
 
-      def inherited(subclass)
-        subclass.class_eval do
-          class_attribute :settings
-
-          self.settings = {}
-        end
+      def self.inherited(subclass)
+        subclass.settings = self.settings.dup
       end
 
       def initialize_report_module
