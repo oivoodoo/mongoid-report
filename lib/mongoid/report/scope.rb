@@ -23,7 +23,7 @@ module Mongoid
         aggregation_queries = compile_queries
         rows = klass.collection.aggregate(aggregation_queries)
 
-        Collection.new(self, rows, fields, columns)
+        Collection.new(context, rows, fields, columns)
       end
 
       private
