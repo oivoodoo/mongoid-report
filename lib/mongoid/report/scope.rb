@@ -19,23 +19,32 @@ module Mongoid
 
       def all
         self.yield unless yielded?
-        queries = compile_queries
-        Collection.new(klass.collection.aggregate(queries), fields, columns)
+
+        aggregation_queries = compile_queries
+        rows = klass.collection.aggregate(aggregation_queries)
+
+        Collection.new(self, rows, fields, columns)
       end
 
       private
 
       def compile_queries
-        queries.map do |query|
-          query.deep_dup.each do |function_name, values|
-            values.each do |name, value|
-              value = value.call(context) if value.respond_to?(:call)
-              query[function_name][name] = value
+        compiled = queries.map do |query|
+          next query unless query.has_key?("$match")
+
+          query.deep_dup.tap do |new_query|
+            new_query.each do |function_name, values|
+              values.each do |name, value|
+                if value.respond_to?(:call)
+                  value = value.call(context)
+                end
+                new_query[function_name][name] = value
+              end
             end
           end
-
-          query
         end
+
+        compiled
       end
 
       def yielded?

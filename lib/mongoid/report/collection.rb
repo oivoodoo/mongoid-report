@@ -4,7 +4,8 @@ module Mongoid
   module Report
 
     class Collection < SimpleDelegator
-      def initialize(rows, fields, columns)
+      def initialize(context, rows, fields, columns)
+        @context = context
         @rows    = rows
         @fields  = fields
         @columns = columns
@@ -32,7 +33,7 @@ module Mongoid
       def compile_dynamic_fields(rows, columns)
         rows.map do |row|
           @columns.each do |name, function|
-            row[name] = function.call(row)
+            row[name] = function.call(@context, row)
           end
 
           row.with_indifferent_access

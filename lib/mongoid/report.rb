@@ -48,7 +48,7 @@ module Mongoid
       alias :initialize :initialize_report_module
 
       def queries(klass)
-        @report_module_settings[klass][:queries]
+        report_module_settings[klass][:queries]
       end
 
       # We should pass here mongoid document

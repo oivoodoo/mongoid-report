@@ -28,7 +28,7 @@ describe Mongoid::Report do
         report 'example' do
           attach_to Model do
             aggregation_field :field1
-            column 'new-field1' => ->(row) { row['field1'] * 10 }
+            column 'new-field1' => ->(context, row) { row['field1'] * 10 }
           end
         end
       end
