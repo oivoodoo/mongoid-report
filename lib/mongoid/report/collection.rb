@@ -21,7 +21,12 @@ module Mongoid
       def summary
         @summary ||= reduce(Hash.new{|h, k| h[k] = 0}) do |summary, row|
           @fields.each do |field|
+            next if @columns.has_key?(field.to_s)
             summary[field] += row[field.to_s]
+          end
+
+          @columns.each do |name, function|
+            summary[name] = function.call(@context, row)
           end
 
           summary
