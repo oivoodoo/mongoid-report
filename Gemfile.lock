@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    mongoid-report (0.1.6)
+    mongoid-report (0.1.7)
       mongoid (> 3.0.1)
 
 GEM
