@@ -11,7 +11,7 @@ describe Mongoid::Report do
 
       report 'example' do
         attach_to Model do
-          columns :'new-field' => ->(context, row, options) { row[context.mapping('example-models')['field3'].to_s] }
+          columns :'new-field' => ->(context, row, options) { row[options[:mapping]['field3'].to_s] }
           mapping :'field3' => :field1
 
           column :field1, :'new-field'

@@ -4,11 +4,12 @@ module Mongoid
   module Report
 
     class Collection < SimpleDelegator
-      def initialize(context, rows, fields, columns)
+      def initialize(context, rows, fields, columns, mapping)
         @context = context
         @rows    = rows
         @fields  = fields
         @columns = columns
+        @mapping = mapping
         @rows    = compile_rows
 
         # Collection should behave like Array using delegator method.
@@ -19,7 +20,7 @@ module Mongoid
         @rows.map do |row|
           @columns.each do |name, function|
             next unless @fields.include?(name)
-            row[name] = function.call(@context, row, { summary: false })
+            row[name] = function.call(@context, row, { mapping: @mapping, summary: false })
           end
 
           row
@@ -40,7 +41,7 @@ module Mongoid
           # Apply dynamic columns for summarized row
           @columns.each do |name, function|
             next unless @fields.include?(name)
-            summary[name] = function.call(@context, row, { summary: true })
+            summary[name] = function.call(@context, row, { mapping: @mapping, summary: true })
           end
 
           summary

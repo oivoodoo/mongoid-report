@@ -23,7 +23,7 @@ module Mongoid
         aggregation_queries = compile_queries
         rows = klass.collection.aggregate(aggregation_queries)
 
-        Collection.new(context, rows, fields, columns)
+        Collection.new(context, rows, fields, columns, mapping)
       end
 
       private
@@ -68,6 +68,10 @@ module Mongoid
 
       def columns
         context.report_module_settings[report_name][:columns]
+      end
+
+      def mapping
+        context.report_module_settings[report_name][:mapping]
       end
     end
 
