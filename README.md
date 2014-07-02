@@ -21,14 +21,14 @@ framework.
   class Report1
     include Mongoid::Report
 
-    aggregation_field :field1, for: Model
+    column :field1, for: Model
   end
 
   class Report2
     include Mongoid::Report
 
     attach_to Model do
-      aggregation_field :field1
+      column :field1
     end
   end
 
@@ -37,7 +37,7 @@ framework.
 
     group_by :day, for: Model
 
-    aggregation_field :field1, for: Model
+    column :field1, for: Model
   end
 
   class Report4
@@ -46,7 +46,7 @@ framework.
     attach_to Model do
       group_by :day
 
-      aggregation_field :field1
+      column :field1
     end
   end
 
@@ -56,7 +56,7 @@ framework.
     attach_to Model, as: 'summary-report' do
       group_by :day
 
-      aggregation_field :field1
+      column :field1
     end
   end
 ```

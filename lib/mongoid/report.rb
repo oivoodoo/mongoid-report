@@ -51,6 +51,10 @@ module Mongoid
         report_module_settings[klass][:queries]
       end
 
+      def mapping(klass)
+        report_module_settings[klass][:mapping]
+      end
+
       # We should pass here mongoid document
       def aggregate_for(report_name)
         Scope.new(self, report_name)
@@ -87,11 +91,11 @@ module Mongoid
 
       def group_by(*fields)
         define_report_method(*fields) do |groups, report_name, _|
-          settings[report_name][:group_by] = groups
+          settings[report_name][:group_by] = groups.map(&:to_s)
         end
       end
 
-      def aggregation_field(*fields)
+      def column(*fields)
         define_report_method(*fields) do |columns, report_name, options|
           columns.each do |column|
             name = options.fetch(:as) { column }
@@ -100,13 +104,21 @@ module Mongoid
         end
       end
 
-      def column(*fields)
-        # Because of representing fields as hash instead of columns we should
-        # have the last variable as columns.
+      def columns(*fields)
         define_report_method(*fields) do |_, report_name, columns|
-          columns.each do |name, function|
-            add_column(report_name, name, function)
+          self.settings[report_name][:columns] = columns.stringify_keys!
+        end
+      end
+
+      def mapping(*fields)
+        define_report_method(*fields) do |_, report_name, mapping|
+          mapping.stringify_keys!
+
+          mapping.each do |key, value|
+            mapping[key] = value.to_s
           end
+
+          self.settings[report_name][:mapping] = mapping
         end
       end
 
@@ -153,20 +165,16 @@ module Mongoid
             fields:    ActiveSupport::OrderedHash.new,
             group_by:  [],
             queries:   [],
+            columns:   {},
+            mapping:   {},
             compiled:  false,
-            columns:   ActiveSupport::OrderedHash.new,
           }
         end
       end
 
       def add_field(attach_name, field, name)
-        settings[attach_name][:fields][field] = name
+        settings[attach_name][:fields][field.to_s] = name.to_s
       end
-
-      def add_column(attach_name, name, function)
-        settings[attach_name][:columns][name] = function
-      end
-
     end
 
   end

@@ -12,8 +12,8 @@ describe Mongoid::Report do
       report 'example' do
         attach_to Model do
           group_by :day
-          aggregation_field :field1
-          column 'dynamic-field1' => ->(context, row) { row['field1'] * 10 }
+          columns :'dynamic-field1' => ->(context, row, options) { row['field1'] * 10 }
+          column :field1, :'dynamic-field1'
         end
       end
     end

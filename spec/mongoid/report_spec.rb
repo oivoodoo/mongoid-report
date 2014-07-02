@@ -2,89 +2,126 @@ require 'spec_helper'
 
 describe Mongoid::Report do
 
-  describe '.aggregation_field' do
+  describe '.column' do
+    let(:report_klass) do
+      Class.new do
+        include Mongoid::Report
+        column :field1, for: Model
+      end
+    end
+
     it 'defines aggegration settings' do
-      expect(Report1).to be_respond_to(:settings)
+      expect(report_klass).to be_respond_to(:settings)
     end
 
     it 'defines aggregation field for specific model to make queries' do
-      fields = Report1.fields(Model)
-      expect(fields).to eq({ field1: :field1 })
+      fields = report_klass.fields(Model)
+      expect(fields).to eq({ 'field1' => 'field1' })
     end
   end
 
-  describe '.attach_to' do
+ describe '.attach_to' do
+    let(:report_klass) do
+      Class.new do
+        include Mongoid::Report
+        attach_to Model do
+          column :field1
+        end
+      end
+    end
+
     it 'defines method in report class to attach report to the model' do
-      expect(Report2).to be_respond_to(:attach_to)
+      expect(report_klass).to be_respond_to(:attach_to)
     end
 
     it 'defines field in terms of attached model' do
-      fields = Report2.fields(Model)
-      expect(fields).to eq({ field1: :field1 })
+      fields = report_klass.fields(Model)
+      expect(fields).to eq({ 'field1' => 'field1' })
     end
   end
 
   describe '.group_by' do
+    let(:report_klass1) do
+      Class.new do
+        include Mongoid::Report
+        group_by :day, for: Model
+        column :field1, for: Model
+      end
+    end
+
     it 'defines group by method as class method' do
-      expect(Report3).to be_respond_to(:group_by)
+      expect(report_klass1).to be_respond_to(:group_by)
     end
 
     it 'stores group by settings under report class' do
-      group_by_settings = Report3.settings[Model][:group_by]
-      expect(group_by_settings).to eq([:day])
+      group_by_settings = report_klass1.settings[Model][:group_by]
+      expect(group_by_settings).to eq(['day'])
+    end
+
+    let(:report_klass2) do
+      Class.new do
+        include Mongoid::Report
+        attach_to Model do
+          group_by :day
+          column :field1
+        end
+      end
     end
 
     it 'defines groups in terms of attached model' do
-      groups = Report4.groups(Model)
-      expect(groups).to eq([:day])
-    end
-  end
-
-  class Report6
-    include Mongoid::Report
-
-    attach_to Model, as: 'example1' do
-      aggregation_field :field1
+      groups = report_klass2.groups(Model)
+      expect(groups).to eq(['day'])
     end
   end
 
   describe '.as' do
-    it 'creates settings with "as" name' do
-      expect(Report6.settings).to have_key('example1')
+    let(:report_klass) do
+      Class.new do
+        include Mongoid::Report
+        attach_to Model, as: 'example1' do
+          column :field1
+        end
+      end
     end
-  end
 
-  class Report7
-    include Mongoid::Report
-
-    report 'example' do
-      attach_to Model, as: 'model1' do
-        aggregation_field :field1
-      end
-
-      attach_to Model do
-        aggregation_field :field1
-      end
+    it 'creates settings with "as" name' do
+      expect(report_klass.settings).to have_key('example1')
     end
   end
 
   describe '.report' do
+    let(:report_klass) do
+      Class.new do
+        include Mongoid::Report
+        report 'example' do
+          attach_to Model, as: 'model1' do
+            column :field1
+          end
+
+          attach_to Model do
+            column :field1
+          end
+        end
+      end
+    end
+
     it 'creates settings with report-<attached-model-name' do
-      expect(Report7.settings).to have_key('example-model1')
-      expect(Report7.settings).to have_key("example-#{Model.collection.name}")
+      expect(report_klass.settings).to have_key('example-model1')
+      expect(report_klass.settings).to have_key("example-#{Model.collection.name}")
     end
   end
 
-  class Report10
-    include Mongoid::Report
+  describe '.column `as` option' do
+    let(:report_klass) do
+      Class.new do
+        include Mongoid::Report
+        column :field1, for: Model, as: 'field-name'
+      end
+    end
 
-    aggregation_field :field1, for: Model, as: 'field-name'
-  end
-
-  describe '.aggregation_field `as` option' do
     it 'creates settings with report-<attached-model-name' do
-      expect(Report10.fields(Model).keys).to eq([:field1])
-      expect(Report10.fields(Model).values).to eq(['field-name'])
+      expect(report_klass.fields(Model).keys).to eq(['field1'])
+      expect(report_klass.fields(Model).values).to eq(['field-name'])
     end
   end
 
@@ -95,7 +132,7 @@ describe Mongoid::Report do
         include Mongoid::Report
 
         attach_to Model do
-          aggregation_field :field1
+          column :field1
         end
       end
 
@@ -103,7 +140,7 @@ describe Mongoid::Report do
         include Mongoid::Report
 
         attach_to Model do
-          aggregation_field :field2
+          column :field2
         end
       end
 
@@ -116,13 +153,13 @@ describe Mongoid::Report do
 
     class ReportKlass1 < ReportKlass
       attach_to Model do
-        aggregation_field :field1
+        column :field1
       end
     end
 
     class ReportKlass2 < ReportKlass
       attach_to Model do
-        aggregation_field :field2
+        column :field2
       end
     end
 

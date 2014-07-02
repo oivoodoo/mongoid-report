@@ -9,11 +9,11 @@ describe Mongoid::Report do
       include Mongoid::Report
 
       attach_to Model, as: 'field1-aggregation' do
-        aggregation_field :field1
+        column :field1
       end
 
       attach_to Model, as: 'field2-aggregation' do
-        aggregation_field :field2
+        column :field2
       end
     end
 

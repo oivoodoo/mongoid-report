@@ -38,6 +38,7 @@ module Mongoid
                 if value.respond_to?(:call)
                   value = value.call(context)
                 end
+
                 new_query[function_name][name] = value
               end
             end

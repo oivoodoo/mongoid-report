@@ -12,7 +12,7 @@ describe Mongoid::Report do
         include Mongoid::Report
 
         attach_to Model do
-          aggregation_field :field1
+          column :field1
         end
       end
 
@@ -33,7 +33,12 @@ describe Mongoid::Report do
       klass.create!(day: today     , field1: 1)
       klass.create!(day: yesterday , field1: 1)
 
-      example = Report3.new
+      Report = Class.new do
+        include Mongoid::Report
+        group_by :day, for: Model
+        column :field1, for: Model
+      end
+      example = Report.new
 
       rows = example.aggregate_for(klass)
       rows = rows.all
@@ -52,7 +57,13 @@ describe Mongoid::Report do
       klass.create(day: two_days_ago , field1: 1 , field2: 2)
       klass.create(day: today        , field1: 1 , field2: 3)
 
-      example = Report3.new
+      Report = Class.new do
+        include Mongoid::Report
+        group_by :day, for: Model
+        column :field1, for: Model
+      end
+      example = Report.new
+
       scope = example.aggregate_for(Model)
       scope = scope.query('$match' => { :day  => { '$gte' => yesterday.mongoize, '$lte' => today.mongoize } })
       scope = scope.query('$match' => { :field2 => 2 })
@@ -71,7 +82,13 @@ describe Mongoid::Report do
     it 'skips empty match in query' do
       klass.create(day: today , field1: 1 , field2: 2)
 
-      example = Report3.new
+      Report = Class.new do
+        include Mongoid::Report
+        group_by :day, for: Model
+        column :field1, for: Model
+      end
+      example = Report.new
+
       scope = example.aggregate_for(Model)
       scope = scope.query()
       scope = scope.query({})
@@ -84,20 +101,6 @@ describe Mongoid::Report do
     end
   end
 
-  class Report7
-    include Mongoid::Report
-
-    attach_to Model, as: 'example1' do
-      group_by :day
-      aggregation_field :field1
-    end
-
-    attach_to Model, as: 'example2' do
-      group_by :day
-      aggregation_field :field2
-    end
-  end
-
   describe '.aggregate' do
     it 'aggregates all defined groups in the report class' do
       klass.create(day: today        , field1: 1 , field2: 2)
@@ -105,7 +108,21 @@ describe Mongoid::Report do
       klass.create(day: yesterday    , field1: 1 , field2: 2)
       klass.create(day: two_days_ago , field1: 1 , field2: 2)
 
-      example = Report7.new
+      Report = Class.new do
+        include Mongoid::Report
+
+        attach_to Model, as: 'example1' do
+          group_by :day
+          column :field1
+        end
+
+        attach_to Model, as: 'example2' do
+          group_by :day
+          column :field2
+        end
+      end
+
+      example = Report.new
       scope = example.aggregate
       scope
         .query('$match' => { :day  => { '$gte' => yesterday.mongoize, '$lte' => today.mongoize } })
@@ -128,29 +145,29 @@ describe Mongoid::Report do
       expect(rows[1]['day']).to eq(yesterday)
     end
 
-    class Report8
-      include Mongoid::Report
-
-      report 'example' do
-        attach_to Model, as: 'model1' do
-          group_by :day
-          aggregation_field :field1
-        end
-
-        attach_to Model, as: 'model2' do
-          group_by :day
-          aggregation_field :field2
-        end
-      end
-    end
-
     it 'should still aggregate with combined report' do
       klass.create(day: today        , field1: 1 , field2: 2)
       klass.create(day: today        , field1: 1 , field2: 2)
       klass.create(day: yesterday    , field1: 1 , field2: 2)
       klass.create(day: two_days_ago , field1: 1 , field2: 2)
 
-      example = Report8.new
+      Report = Class.new do
+        include Mongoid::Report
+
+        report 'example' do
+          attach_to Model, as: 'model1' do
+            group_by :day
+            column :field1
+          end
+
+          attach_to Model, as: 'model2' do
+            group_by :day
+            column :field2
+          end
+        end
+      end
+      example = Report.new
+
       scope = example.aggregate
       scope
         .query('$match' => { :day  => { '$gte' => yesterday.mongoize, '$lte' => today.mongoize } })
@@ -173,29 +190,29 @@ describe Mongoid::Report do
       expect(rows[1]['day']).to eq(yesterday)
     end
 
-    class Report11
-      include Mongoid::Report
-
-      report 'example' do
-        attach_to Model, as: 'model1' do
-          group_by :day
-          aggregation_field :field1, as: 'new-field1'
-        end
-
-        attach_to Model, as: 'model2' do
-          group_by :day
-          aggregation_field :field2
-        end
-      end
-    end
-
     it 'should still aggregate with combined report and project using the new names' do
       klass.create(day: today        , field1: 1 , field2: 2)
       klass.create(day: today        , field1: 1 , field2: 2)
       klass.create(day: yesterday    , field1: 1 , field2: 2)
       klass.create(day: two_days_ago , field1: 1 , field2: 2)
 
-      example = Report11.new
+      Report = Class.new do
+        include Mongoid::Report
+
+        report 'example' do
+          attach_to Model, as: 'model1' do
+            group_by :day
+            column :field1, as: 'new-field1'
+          end
+
+          attach_to Model, as: 'model2' do
+            group_by :day
+            column :field2
+          end
+        end
+      end
+      example = Report.new
+
       scope = example.aggregate
       scope
         .query('$match' => { :day  => { '$gte' => yesterday.mongoize, '$lte' => today.mongoize } })
@@ -219,19 +236,19 @@ describe Mongoid::Report do
     end
   end
 
-  class Report15
-    include Mongoid::Report
-
-    filter field2: 2, for: Model
-    aggregation_field :field1, for: Model
-  end
-
   describe '.filter' do
     it 'creates filter' do
       klass.create(field1: 1, field2: 2)
       klass.create(field1: 3, field2: 4)
 
-      example = Report15.new
+      Report = Class.new do
+        include Mongoid::Report
+
+        filter field2: 2, for: Model
+        column :field1, for: Model
+      end
+      example = Report.new
+
       scope = example.aggregate
       scope = scope.all
 
@@ -240,22 +257,22 @@ describe Mongoid::Report do
       expect(rows[0]['field1']).to eq(1)
     end
 
-    class Report16
-      include Mongoid::Report
-
-      report 'example' do
-        attach_to Model do
-          filter field2: 2
-          aggregation_field :field1
-        end
-      end
-    end
-
     it 'creates filter in report scope' do
       klass.create(field1: 1, field2: 2)
       klass.create(field1: 3, field2: 4)
 
-      example = Report16.new
+      Report = Class.new do
+        include Mongoid::Report
+
+        report 'example' do
+          attach_to Model do
+            filter field2: 2
+            column :field1
+          end
+        end
+      end
+
+      example = Report.new
       scope = example.aggregate
       scope = scope.all
 
@@ -264,24 +281,24 @@ describe Mongoid::Report do
       expect(rows[0]['field1']).to eq(1)
     end
 
-    class Report17
-      include Mongoid::Report
-
-      report 'example' do
-        attach_to Model do
-          filter field2: 2,
-                 day: ->(context) { Date.parse("20-12-2004").mongoize }
-          aggregation_field :field1
-        end
-      end
-    end
-
     it 'creates filter in report scope' do
       klass.create(day: today     , field1: 1 , field2: 2)
       klass.create(day: yesterday , field1: 1 , field2: 2)
       klass.create(day: today     , field1: 3 , field2: 4)
 
-      example = Report17.new
+      Report = Class.new do
+        include Mongoid::Report
+
+        report 'example' do
+          attach_to Model do
+            filter field2: 2,
+              day: ->(context) { Date.parse("20-12-2004").mongoize }
+            column :field1
+          end
+        end
+      end
+      example = Report.new
+
       scope = example.aggregate
       scope = scope.all
 
@@ -290,29 +307,29 @@ describe Mongoid::Report do
       expect(rows[0]['field1']).to eq(1)
     end
 
-    class Report18
-      include Mongoid::Report
-
-      def values
-        [1, 2]
-      end
-
-      report 'example' do
-        attach_to Model do
-          group_by :day
-          filter field2: ->(context) { { '$in' => context.values } }
-          aggregation_field :field1
-        end
-      end
-    end
-
     it 'creates filter in report scope' do
       klass.create(day: today     , field1: 1 , field2: 2)
       klass.create(day: today     , field1: 1 , field2: 2)
       klass.create(day: yesterday , field1: 1 , field2: 2)
       klass.create(day: today     , field1: 3 , field2: 4)
 
-      example = Report18.new
+      Report = Class.new do
+        include Mongoid::Report
+
+        def values
+          [1, 2]
+        end
+
+        report 'example' do
+          attach_to Model do
+            group_by :day
+            filter field2: ->(context) { { '$in' => context.values } }
+            column :field1
+          end
+        end
+      end
+      example = Report.new
+
       scope = example.aggregate
       scope = scope.all
 

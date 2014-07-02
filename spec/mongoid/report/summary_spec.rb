@@ -12,12 +12,17 @@ describe Mongoid::Report do
       klass.create!(day: today     , field1: 1)
       klass.create!(day: yesterday , field1: 1)
 
-      example = Report3.new
+      Report = Class.new do
+        include Mongoid::Report
+        group_by :day, for: Model
+        column :field1, for: Model
+      end
+      example = Report.new
+
       rows = example.aggregate_for(klass)
       rows = rows.all
 
       expect(rows.count).to eq(2)
-      expect(rows.summary[:field1]).to eq(3)
       expect(rows.summary['field1']).to eq(3)
     end
 
@@ -25,10 +30,15 @@ describe Mongoid::Report do
       Report = Class.new do
         include Mongoid::Report
 
+        COLUMNS = {
+          :'new-field1' => ->(context, row, options) { row['field1'] * 10 },
+          :'new-field2' => ->(context, row, options) { row['field1'] * 20 },
+        }
+
         report 'example' do
           attach_to Model do
-            aggregation_field :field1
-            column 'new-field1' => ->(context, row) { row['field1'] * 10 }
+            columns COLUMNS
+            column :field1, 'new-field1'
           end
         end
       end
@@ -41,8 +51,13 @@ describe Mongoid::Report do
       rows = example.aggregate_for('example-models')
       rows = rows.all
 
+      expect(rows[0].keys.size).to eq(2)
       expect(rows[0]['field1']).to eq(3)
       expect(rows[0]['new-field1']).to eq(30)
+
+      expect(rows.summary.keys.size).to eq(2)
+      expect(rows.summary['field1']).to eq(3)
+      expect(rows.summary['new-field1']).to eq(30)
     end
   end
 

@@ -11,10 +11,22 @@ module Mongoid
         super(context, collection, options)
       end
 
-      def aggregation_field(*fields)
+      def columns(*fields)
         proxy_options = fields.extract_options!
         proxy_options.merge!(options)
-        context.aggregation_field(*fields, proxy_options)
+        context.columns(*fields, proxy_options)
+      end
+
+      def column(*fields)
+        proxy_options = fields.extract_options!
+        proxy_options.merge!(options)
+        context.column(*fields, proxy_options)
+      end
+
+      def mapping(*fields)
+        proxy_options = fields.extract_options!
+        proxy_options.merge!(options)
+        context.mapping(*fields, proxy_options)
       end
 
       def group_by(*fields)
@@ -27,12 +39,6 @@ module Mongoid
         proxy_options = fields.extract_options!
         proxy_options.merge!(options)
         context.filter(*fields, proxy_options)
-      end
-
-      def column(*fields)
-        proxy_options = fields.extract_options!
-        proxy_options.merge!(options)
-        context.column(*fields, proxy_options)
       end
     end
 

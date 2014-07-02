@@ -17,7 +17,9 @@ module Mongoid
       end
 
       def fields
-        @fields ||= settings[:fields]
+        @fields ||= settings[:fields].select do |field, _|
+          !settings[:columns].include?(field.to_sym)
+        end
       end
 
       def in_fields
