@@ -19,11 +19,12 @@ describe Mongoid::Report do
       end
       example = Report.new
 
-      rows = example.aggregate_for(klass)
-      rows = rows.all
+      report = example.aggregate_for(klass)
+      report = report.all
+      rows = report.rows
 
       expect(rows.count).to eq(2)
-      expect(rows.summary['field1']).to eq(3)
+      expect(report.summary['field1']).to eq(3)
     end
 
     it 'should support dynamic columns as well' do
@@ -47,17 +48,18 @@ describe Mongoid::Report do
       klass.create!(field1: 1)
       klass.create!(field1: 1)
 
-      example = Report.new
-      rows = example.aggregate_for('example-models')
-      rows = rows.all
+      report = Report.new
+      report = report.aggregate_for('example-models')
+      report = report.all
+      rows = report.rows
 
       expect(rows[0].keys.size).to eq(2)
       expect(rows[0]['field1']).to eq(3)
       expect(rows[0]['new-field1']).to eq(30)
 
-      expect(rows.summary.keys.size).to eq(2)
-      expect(rows.summary['field1']).to eq(3)
-      expect(rows.summary['new-field1']).to eq(30)
+      expect(report.summary.keys.size).to eq(2)
+      expect(report.summary['field1']).to eq(3)
+      expect(report.summary['new-field1']).to eq(30)
     end
   end
 

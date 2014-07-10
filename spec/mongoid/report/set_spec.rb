@@ -18,10 +18,12 @@ describe Mongoid::Report do
         end
       end
     end
-    example = Report.new
 
-    rows = example.aggregate_for('example-models')
-    rows = rows.all
+    report = Report.new
+    report = report.aggregate_for('example-models')
+    report = report.all
+
+    rows = report.rows
 
     expect(rows.size).to eq(1)
     expect(rows[0]['field1']).to eq(2)

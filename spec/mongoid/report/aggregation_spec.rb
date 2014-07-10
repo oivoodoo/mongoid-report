@@ -21,8 +21,9 @@ describe Mongoid::Report do
       klass.create!(field1: 1)
 
       example = Report.new
-      rows = example.aggregate_for(klass)
-      rows = rows.all
+      report = example.aggregate_for(klass)
+      report = report.all
+      rows = report.rows
 
       expect(rows.size).to eq(1)
       expect(rows[0]['field1']).to eq(3)
@@ -40,8 +41,10 @@ describe Mongoid::Report do
       end
       example = Report.new
 
-      rows = example.aggregate_for(klass)
-      rows = rows.all
+      report = example.aggregate_for(klass)
+      report = report.all
+
+      rows = report.rows
 
       expect(rows.size).to eq(2)
       expect(rows[0]['field1']).to eq(1)
@@ -70,7 +73,9 @@ describe Mongoid::Report do
       scope = scope.yield
       scope = scope.query('$sort' => { day: -1 })
 
-      rows  = scope.all
+      scope = scope.all
+
+      rows = scope.rows
 
       expect(rows.size).to eq(2)
       expect(rows[0]['field1']).to eq(2)
@@ -93,7 +98,9 @@ describe Mongoid::Report do
       scope = scope.query()
       scope = scope.query({})
 
-      rows  = scope.all
+      scope  = scope.all
+
+      rows = scope.rows
 
       expect(rows.size).to eq(1)
       expect(rows[0]['field1']).to eq(1)
@@ -130,14 +137,14 @@ describe Mongoid::Report do
         .query('$sort' => { day: -1 })
       scope = scope.all
 
-      rows = scope['example1']
+      rows = scope['example1'].rows
       expect(rows.size).to eq(2)
       expect(rows[0]['field1']).to eq(2)
       expect(rows[0]['day']).to eq(today)
       expect(rows[1]['field1']).to eq(1)
       expect(rows[1]['day']).to eq(yesterday)
 
-      rows = scope['example2']
+      rows = scope['example2'].rows
       expect(rows.size).to eq(2)
       expect(rows[0]['field2']).to eq(4)
       expect(rows[0]['day']).to eq(today)
@@ -175,14 +182,14 @@ describe Mongoid::Report do
         .query('$sort' => { day: -1 })
       scope = scope.all
 
-      rows = scope['example-model1']
+      rows = scope['example-model1'].rows
       expect(rows.size).to eq(2)
       expect(rows[0]['field1']).to eq(2)
       expect(rows[0]['day']).to eq(today)
       expect(rows[1]['field1']).to eq(1)
       expect(rows[1]['day']).to eq(yesterday)
 
-      rows = scope['example-model2']
+      rows = scope['example-model2'].rows
       expect(rows.size).to eq(2)
       expect(rows[0]['field2']).to eq(4)
       expect(rows[0]['day']).to eq(today)
@@ -220,14 +227,14 @@ describe Mongoid::Report do
         .query('$sort' => { day: -1 })
       scope = scope.all
 
-      rows = scope['example-model1']
+      rows = scope['example-model1'].rows
       expect(rows.size).to eq(2)
       expect(rows[0]['new-field1']).to eq(2)
       expect(rows[0]['day']).to eq(today)
       expect(rows[1]['new-field1']).to eq(1)
       expect(rows[1]['day']).to eq(yesterday)
 
-      rows = scope['example-model2']
+      rows = scope['example-model2'].rows
       expect(rows.size).to eq(2)
       expect(rows[0]['field2']).to eq(4)
       expect(rows[0]['day']).to eq(today)
@@ -252,7 +259,7 @@ describe Mongoid::Report do
       scope = example.aggregate
       scope = scope.all
 
-      rows = scope[Model]
+      rows = scope[Model].rows
       expect(rows.size).to eq(1)
       expect(rows[0]['field1']).to eq(1)
     end
@@ -276,7 +283,7 @@ describe Mongoid::Report do
       scope = example.aggregate
       scope = scope.all
 
-      rows = scope['example-models']
+      rows = scope['example-models'].rows
       expect(rows.size).to eq(1)
       expect(rows[0]['field1']).to eq(1)
     end
@@ -302,7 +309,7 @@ describe Mongoid::Report do
       scope = example.aggregate
       scope = scope.all
 
-      rows = scope['example-models']
+      rows = scope['example-models'].rows
       expect(rows.size).to eq(1)
       expect(rows[0]['field1']).to eq(1)
     end
@@ -333,7 +340,7 @@ describe Mongoid::Report do
       scope = example.aggregate
       scope = scope.all
 
-      rows = scope['example-models']
+      rows = scope['example-models'].rows
       expect(rows.size).to eq(2)
       expect(rows[0]['field1']).to eq(1)
       expect(rows[1]['field1']).to eq(2)

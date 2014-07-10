@@ -10,25 +10,19 @@ module Mongoid
         @fields  = fields
         @columns = columns
         @mapping = mapping
-        @rows    = compile_rows
-
-        # Collection should behave like Array using delegator method.
-        super(@rows)
+        @rows    = Rows.new(compile_rows)
       end
 
-      def compile_rows
-        @rows.map do |row|
-          @columns.each do |name, function|
-            next unless @fields.include?(name)
-            row[name] = function.call(@context, row, { mapping: @mapping, summary: false })
-          end
+      class Rows < SimpleDelegator ; end
 
-          row
-        end
+      attr_reader :rows
+
+      def headers
+        @fields
       end
 
       def summary
-        @summary ||= reduce(Hash.new{|h, k| h[k] = 0}) do |summary, row|
+        @summary ||= @rows.reduce(Hash.new{|h, k| h[k] = 0}) do |summary, row|
           # Find summary for aggregated rows
           @fields.each do |field|
             # Don't apply for dynamic calculated columns lets wait until we get
@@ -45,6 +39,19 @@ module Mongoid
           end
 
           summary
+        end
+      end
+
+      private
+
+      def compile_rows
+        @rows.map do |row|
+          @columns.each do |name, function|
+            next unless @fields.include?(name)
+            row[name] = function.call(@context, row, { mapping: @mapping, summary: false })
+          end
+
+          row
         end
       end
 

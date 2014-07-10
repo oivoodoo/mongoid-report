@@ -24,11 +24,11 @@ describe Mongoid::Report do
     klass.create(day: yesterday , field1: 1)
     klass.create(day: today     , field1: 1)
 
-    example = report_klass.new
-    scope = example.aggregate
+    report = report_klass.new
+    scope = report.aggregate
     scope = scope.all
 
-    rows = scope['example-models']
+    rows = scope['example-models'].rows
     expect(rows.size).to eq(2)
     expect(rows[0]['field1']).to eq(1)
     expect(rows[0]['dynamic-field1']).to eq(10)
