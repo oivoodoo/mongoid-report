@@ -15,7 +15,7 @@ module Mongoid
 
       class Rows < SimpleDelegator ; end
 
-      attr_reader :rows
+      attr_reader :context, :rows
 
       def headers
         @fields
