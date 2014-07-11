@@ -3,7 +3,7 @@ require 'delegate'
 module Mongoid
   module Report
 
-    class Collection < SimpleDelegator
+    class Collection
       def initialize(context, rows, fields, columns, mapping)
         @context = context
         @rows    = rows
