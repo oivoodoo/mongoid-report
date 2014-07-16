@@ -29,6 +29,7 @@ module Mongoid
             # all summaried mongo columns and then apply dynamic columns
             # calculations.
             next if @columns.has_key?(field)
+            next unless row[field].is_a?(Fixnum) || row[field].is_a?(Float)
             summary[field] += row[field]
           end
 

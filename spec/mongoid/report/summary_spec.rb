@@ -61,6 +61,35 @@ describe Mongoid::Report do
       expect(report.summary['field1']).to eq(3)
       expect(report.summary['new-field1']).to eq(30)
     end
+
+    it 'should not summaries day field' do
+      Report = Class.new do
+        include Mongoid::Report
+
+        report 'example' do
+          attach_to Model do
+            group_by :day
+            column :day, :field1
+          end
+        end
+      end
+
+      klass.create!(day: DateTime.now, field1: 1)
+      klass.create!(day: DateTime.now, field1: 1)
+      klass.create!(day: DateTime.now, field1: 1)
+
+      report = Report.new
+      report = report.aggregate_for('example-models')
+      report = report.all
+      rows = report.rows
+
+      expect(rows[0].keys.size).to eq(2)
+      expect(rows[0]['field1']).to eq(3)
+      expect(rows[0]['day']).to be
+
+      expect(report.summary.keys.size).to eq(1)
+      expect(report.summary['field1']).to eq(3)
+    end
   end
 
 end
