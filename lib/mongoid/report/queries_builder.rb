@@ -53,6 +53,7 @@ module Mongoid
           end
 
           in_fields.inject(query) do |hash, field|
+            next hash if groups.include?(field)
             hash.merge!(field => { '$sum' => GROUP_TEMPLATE % field })
           end
         end
@@ -72,6 +73,7 @@ module Mongoid
           end
 
           fields.inject(query) do |hash, (field, name)|
+            next hash if groups.include?(field)
             hash.merge!(name => "$#{field}")
           end
         end

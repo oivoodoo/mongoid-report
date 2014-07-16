@@ -67,7 +67,7 @@ describe Mongoid::Report::QueriesBuilder do
       attach_to Model do
         group_by :day, :field2
 
-        column :field1, :field3
+        column :field2, :field1, :field3
       end
     end
 
