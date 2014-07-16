@@ -36,13 +36,6 @@ module Mongoid
           .concat(groups)
       end
 
-      # All queries are going using 3 steps:
-      # - project query for selecting only required fields and decrease the
-      # memory usage on aggregation.
-      # - group by query using the explicit declarations in the columns
-      # - project query after the grouping the data and selecting only required
-      # columns for storing to the row.
-
       # Example: { '$project' => { :field1 => 1 } }
       def project_query
         all_fields.inject({}) do |hash, field|
@@ -60,7 +53,6 @@ module Mongoid
           end
 
           in_fields.inject(query) do |hash, field|
-            next hash if groups.include?(field)
             hash.merge!(field => { '$sum' => GROUP_TEMPLATE % field })
           end
         end
@@ -74,15 +66,12 @@ module Mongoid
           else
             query[:_id] = 0
 
-            keys = fields.keys
             groups.inject(query) do |hash, group|
-              next hash unless keys.include?(group)
               hash.merge!(group => PROJECT_TEMPLATE % group)
             end
           end
 
           fields.inject(query) do |hash, (field, name)|
-            next hash if query.include?(field)
             hash.merge!(name => "$#{field}")
           end
         end
