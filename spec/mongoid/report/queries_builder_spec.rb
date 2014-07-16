@@ -35,7 +35,7 @@ describe Mongoid::Report::QueriesBuilder do
 
         attach_to Model do
           group_by :day
-          column :field1
+          column :day, :field1
         end
       end
       report = Report.new
@@ -67,7 +67,7 @@ describe Mongoid::Report::QueriesBuilder do
       attach_to Model do
         group_by :day, :field2
 
-        column :field1, :field3
+        column :field2, :field1, :field3
       end
     end
 
@@ -91,7 +91,6 @@ describe Mongoid::Report::QueriesBuilder do
       expect(queries[2]).to eq(
         '$project' => {
           :_id     => 0,
-          'day'    => '$_id.day',
           'field2' => '$_id.field2',
           'field1' => '$field1',
           'field3' => '$field3',
