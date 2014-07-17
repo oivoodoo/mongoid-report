@@ -21,7 +21,7 @@ module Mongoid
       end
 
       def map
-        range.each_slice(size).map do |r|
+        range.each_slice(size.ceil).map do |r|
           yield r
         end
       end
