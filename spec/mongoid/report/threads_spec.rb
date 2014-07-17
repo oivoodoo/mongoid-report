@@ -56,29 +56,41 @@ describe Mongoid::Report do
       report 'example' do
         attach_to Model do
           group_by :day
-          batches size: 5, by: :day
+          batches pool_size: 4
           column :field1
         end
       end
     end
 
-    5.times do |i|
-      10000.times { klass.create!(day: i.days.ago, field1: 1) }
-    end
+    TIMES = 20
+
+    TIMES.times.map do |i|
+      Thread.new do
+        10000.times { klass.create!(day: i.days.ago, field1: 1) }
+      end
+    end.map(&:join)
+
+    report1 = Report1.new
+    scoped = report1.aggregate
 
     time1 = Benchmark.measure do
-      rows = scoped
-        .in_batches(day: (0.days.ago.to_date..5.days.from_now.to_date))
-        .all
+      rows = scoped.all
+      expect(rows['example-models'].rows[0]['field1']).to eq(10000)
     end
 
+    report2 = Report2.new
+    scoped = report2.aggregate_for('example-models')
+
     time2 = Benchmark.measure do
-      rows = scoped.all
+      scoped = scoped
+        .in_batches(day: (5.days.ago.to_date..0.days.from_now.to_date))
+        .all
+      expect(scoped.rows[0]['field1']).to eq(10000)
     end
 
     puts time2
     puts time1
 
-    time2.real.should > time1.real
+    time1.real.should > time2.real
   end
 end

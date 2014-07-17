@@ -40,6 +40,12 @@ module Mongoid
         proxy_options.merge!(options)
         context.filter(*fields, proxy_options)
       end
+
+      def batches(*fields)
+        proxy_options = fields.extract_options!
+        proxy_options.merge!(options)
+        context.batches(*fields, proxy_options)
+      end
     end
 
   end

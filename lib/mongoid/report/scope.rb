@@ -1,6 +1,41 @@
 module Mongoid
   module Report
 
+    Batches = Struct.new(:settings, :conditions) do
+      DEFAULT_THREAD_POOL_SIZE = 3
+
+      def initialize(settings = {}, conditions = {})
+        if settings.nil? || settings.empty?
+          settings = { 'pool_size' => DEFAULT_THREAD_POOL_SIZE }
+        end
+
+        super(settings, conditions)
+      end
+
+      def field
+        conditions.keys[0]
+      end
+
+      def range
+        conditions.values[0]
+      end
+
+      def map
+        range.each_slice(size).map do |r|
+          yield r
+        end
+      end
+
+      def size
+        range.count / settings['pool_size']
+      end
+
+      def present?
+        settings['pool_size'].present? &&
+          conditions.present?
+      end
+    end
+
     Scope = Struct.new(:context, :report_name) do
       def query(conditions = {})
         queries.concat([conditions]) unless conditions.empty?
@@ -21,9 +56,37 @@ module Mongoid
         self.yield unless yielded?
 
         aggregation_queries = compile_queries
-        rows = klass.collection.aggregate(aggregation_queries)
 
-        Collection.new(context, rows, fields, columns, mapping)
+        if batches.present?
+          # Lets assume we have only one field for making splits for the
+          # aggregation queries.
+          rows = []
+
+          threads = batches.map do |r|
+            # For now we are supporting only data fields for splitting up the
+            # queries.
+            range_match = r.map { |time| time.to_date.mongoize }
+
+            Thread.new do
+              q =
+                ['$match' => { batches.field => { '$gte' => range_match.first, '$lte' => range_match.last } }] +
+                aggregation_queries
+              rows.concat(klass.collection.aggregate(q))
+            end
+          end
+          threads.map(&:join)
+
+          Collection.new(context, rows, fields, columns, mapping)
+        else
+          # when we have no batches to run and lets do it inline.
+          rows = klass.collection.aggregate(aggregation_queries)
+          Collection.new(context, rows, fields, columns, mapping)
+        end
+      end
+
+      def in_batches(conditions)
+        batches.conditions = conditions
+        self
       end
 
       private
@@ -58,6 +121,11 @@ module Mongoid
 
       def klass
         context.report_module_settings[report_name][:for]
+      end
+
+      def batches
+        @batches ||= Mongoid::Report::Batches.new(
+          context.report_module_settings[report_name][:batches])
       end
 
       def fields
