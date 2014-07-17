@@ -76,6 +76,12 @@ module Mongoid
         proxy.instance_eval(&block)
       end
 
+      def batches(*fields)
+        define_report_method(*fields) do |_, report_name, batches|
+          self.settings[report_name][:batches] = batches.stringify_keys!
+        end
+      end
+
       def filter(*fields)
         define_report_method(*fields) do |_, report_name, options|
           queries = self.settings_property(report_name, :queries)

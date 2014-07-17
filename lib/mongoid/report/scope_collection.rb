@@ -29,6 +29,13 @@ module Mongoid
         self
       end
 
+      def in_batches(conditions)
+        scopes.each do |scope|
+          scope.in_batches(conditions)
+        end
+        self
+      end
+
       def all
         {}.tap do |hash|
           if Mongoid::Report::Config.use_threads_on_aggregate
