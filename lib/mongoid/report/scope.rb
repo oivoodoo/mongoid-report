@@ -1,8 +1,36 @@
 module Mongoid
   module Report
+    # We are using this class to combine results by group by fields.
+    Merger = Struct.new(:groups) do
+      def do(rows)
+        # Merge by groups.
+        groups.each do |group|
+          rows = rows
+            .group_by { |row| row[group] }
+            .values
+            .map { |array_row| combine(array_row) }
+          end
 
+        rows
+      end
+
+      private
+
+      def combine(rows)
+        rows.inject(Hash.new {|h,k| h[k] = 0}) do |row, lines|
+          lines.each do |key, value|
+            next row[key] = value if groups.include?(key)
+            row[key] += value
+          end
+
+          row
+        end
+      end
+    end
+
+    # Split the queries into threads.
     Batches = Struct.new(:settings, :conditions) do
-      DEFAULT_THREAD_POOL_SIZE = 3
+      DEFAULT_THREAD_POOL_SIZE = 5
 
       def initialize(settings = {}, conditions = {})
         if settings.nil? || settings.empty?
@@ -71,17 +99,21 @@ module Mongoid
               q =
                 ['$match' => { batches.field => { '$gte' => range_match.first, '$lte' => range_match.last } }] +
                 aggregation_queries
+
+              # if groups == [batch.field]
               rows.concat(klass.collection.aggregate(q))
             end
           end
           threads.map(&:join)
 
-          Collection.new(context, rows, fields, columns, mapping)
+          merger = Mongoid::Report::Merger.new(groups)
+          rows = merger.do(rows)
         else
           # when we have no batches to run and lets do it inline.
           rows = klass.collection.aggregate(aggregation_queries)
-          Collection.new(context, rows, fields, columns, mapping)
         end
+
+        Collection.new(context, rows, fields, columns, mapping)
       end
 
       def in_batches(conditions)
@@ -126,6 +158,10 @@ module Mongoid
       def batches
         @batches ||= Mongoid::Report::Batches.new(
           context.report_module_settings[report_name][:batches])
+      end
+
+      def groups
+        @groups ||= context.report_module_settings[report_name][:group_by]
       end
 
       def fields
