@@ -27,7 +27,7 @@ module Mongoid
       end
 
       def size
-        range.count / settings['pool_size']
+        range.count.to_f / settings['pool_size'].to_f
       end
 
       def present?
