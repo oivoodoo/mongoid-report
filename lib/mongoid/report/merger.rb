@@ -5,14 +5,10 @@ module Mongoid
     Merger = Struct.new(:groups) do
       def do(rows)
         # Merge by groups.
-        groups.each do |group|
-          rows = rows
-            .group_by { |row| row[group] }
-            .values
-            .map { |array_row| combine(array_row) }
-          end
-
         rows
+          .group_by { |row| groups.map { |group| row[group] }.join('-') }
+          .values
+          .map { |array_row| combine(array_row) }
       end
 
       private
