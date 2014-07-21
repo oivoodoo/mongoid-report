@@ -58,9 +58,18 @@ module Mongoid
         report_module_settings[klass][:mapping]
       end
 
-      # We should pass here mongoid document
-      def aggregate_for(report_name)
-        Scope.new(self, report_name)
+      # Method for preparing of aggregation scope where you can apply query,
+      # yield and other grouping methods.
+      #
+      # @params:
+      # report_name:String - "<report>-<attach-to-or-as-option>"
+      # options:Hash - could contain proc for attach_to block for getting dynamic
+      # collection name.
+      #
+      # Example: { attach_to: proc { "report-#{user.auth_token}" }
+      #
+      def aggregate_for(report_name, options = {})
+        Scope.new(self, report_name, options)
       end
 
       def aggregate
@@ -74,7 +83,10 @@ module Mongoid
         proxy.instance_eval(&block)
       end
 
-      def attach_to(collection, options = {}, &block)
+      def attach_to(*fields, &block)
+        options = fields.extract_options!
+        collection = fields[0]
+
         proxy = AttachProxy.new(self, collection, options)
         proxy.instance_eval(&block)
       end
@@ -159,15 +171,18 @@ module Mongoid
         attach_name = options.fetch(:attach_name) { collection }
         options.delete(:attach_name)
 
+        # If user is using dynamic colleciton name for attach_to block.
+        attach_use_proc = options.delete(:attach_use_proc) || false
+
         # We should always have for option
-        initialize_settings_by(attach_name, collection)
+        initialize_settings_by(attach_name, collection, attach_use_proc: attach_use_proc)
 
         # Because of modifying fields(usign exract options method of
         # ActiveSupport) lets pass fields to the next block with collection.
         yield fields, attach_name, options || {}
       end
 
-      def initialize_settings_by(attach_name, collection)
+      def initialize_settings_by(attach_name, collection, options = {})
         settings[attach_name] ||= settings.fetch(attach_name) do
           {
             for:       collection,
@@ -177,7 +192,7 @@ module Mongoid
             columns:   {},
             mapping:   {},
             compiled:  false,
-          }
+          }.merge(options)
         end
       end
 

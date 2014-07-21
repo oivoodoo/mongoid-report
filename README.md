@@ -14,6 +14,7 @@ framework.
     include Mongoid::Document
 
     field :field1, type: Integer, default: 0
+    field :field2, type: Integer, default: 0
 
     field :day,    type: Date
   end
@@ -21,42 +22,11 @@ framework.
   class Report1
     include Mongoid::Report
 
-    column :field1, for: Model
-  end
-
-  class Report2
-    include Mongoid::Report
-
-    attach_to Model do
-      column :field1
-    end
-  end
-
-  class Report3
-    include Mongoid::Report
-
-    group_by :day, for: Model
-
-    column :field1, for: Model
-  end
-
-  class Report4
-    include Mongoid::Report
-
-    attach_to Model do
-      group_by :day
-
-      column :field1
-    end
-  end
-
-  class Report5
-    include Mongoid::Report
-
-    attach_to Model, as: 'summary-report' do
-      group_by :day
-
-      column :field1
+    report 'example' do
+      attach_to Model do
+        group_by :day
+        column :field1, for: Model
+      end
     end
   end
 ```

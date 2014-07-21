@@ -4,11 +4,11 @@ describe Mongoid::Report::QueriesBuilder do
 
   describe '.queries' do
     it 'builds queries for aggregation' do
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
         column :field1, for: Model
       end
-      report = Report.new
+      report = report_klass.new
 
       queries = report.queries(Model)
       expect(queries.size).to eq(3)
@@ -30,7 +30,7 @@ describe Mongoid::Report::QueriesBuilder do
     end
 
     it 'builds queries using custom one group' do
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
 
         attach_to Model do
@@ -38,7 +38,7 @@ describe Mongoid::Report::QueriesBuilder do
           column :field1
         end
       end
-      report = Report.new
+      report = report_klass.new
 
       queries = report.queries(Model)
       expect(queries.size).to eq(3)

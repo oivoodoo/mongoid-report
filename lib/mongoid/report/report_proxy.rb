@@ -1,13 +1,26 @@
+require 'securerandom'
+
 module Mongoid
   module Report
 
     ReportProxy = Struct.new(:context, :name) do
-      def attach_to(model, options = {}, &block)
-        as = options.fetch(:as) { model.collection.name }
+      def attach_to(*fields, &block)
+        options = fields.extract_options!
+        model   = fields[0]
 
-        options.merge!(as: "#{name}-#{as}")
+        as = options.fetch(:as) do
+          if model
+            model.collection.name
+          end
+        end
 
-        context.attach_to(model, options, &block)
+        if as
+          options.merge!(as: "#{name}-#{as}")
+        else
+          options.merge!(as: name)
+        end
+
+        context.attach_to(*fields, options, &block)
       end
     end
 

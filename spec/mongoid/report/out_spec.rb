@@ -5,7 +5,7 @@ describe Mongoid::Report do
 
   it 'should merge properly results on splitted requests' do
     ########## 1. Making the first report and out to the defined collection name.
-    Report = Class.new do
+    report_klass = Class.new do
       include Mongoid::Report
 
       report 'example' do
@@ -24,7 +24,7 @@ describe Mongoid::Report do
     klass.create!(day: 3.days.ago, field1: 1, field2: 1)
     klass.create!(day: 4.days.ago, field1: 1, field2: 1)
 
-    report = Report.new
+    report = report_klass.new
 
     scoped = report.aggregate_for('example-models')
     scoped = scoped
@@ -38,13 +38,12 @@ describe Mongoid::Report do
     expect(values).to include(2)
     expect(values).to include(3)
 
-    StoredReport = Class.new do
+    stored_report_klass = Class.new do
       include Mongoid::Document
-
       store_in collection: 'stored-report'
     end
 
-    out = StoredReport.all
+    out = stored_report_klass.all
     expect(out.count).to eq(3)
     values = out.map { |o| o['field2'] }
     expect(values).to include(4)
@@ -66,7 +65,7 @@ describe Mongoid::Report do
     expect(values).to include(2)
     expect(values).to include(3)
 
-    out = StoredReport.all
+    out = stored_report_klass.all
     expect(out.count).to eq(3)
     values = out.map { |o| o['field2'] }
     expect(values).to include(5)

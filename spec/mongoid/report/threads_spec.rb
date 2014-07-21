@@ -5,7 +5,7 @@ describe Mongoid::Report do
   let(:klass) { Model }
 
   it 'aggregates fields by app in threads' do
-    Report = Class.new do
+    report_klass = Class.new do
       include Mongoid::Report
 
       attach_to Model, as: 'field1-aggregation' do
@@ -17,11 +17,11 @@ describe Mongoid::Report do
       end
     end
 
-    TIMES = 30000
+    times = 30000
 
-    TIMES.times { klass.create!(field1: 1, field2: 1) }
+    times.times { klass.create!(field1: 1, field2: 1) }
 
-    report = Report.new
+    report = report_klass.new
     scoped = report.aggregate
 
     Mongoid::Report::Config.use_threads_on_aggregate = true
@@ -41,7 +41,7 @@ describe Mongoid::Report do
   end
 
   it 'should work faster using batches in threads on aggregate' do
-    Report1 = Class.new do
+    report_klass1 = Class.new do
       include Mongoid::Report
 
       report 'example' do
@@ -52,7 +52,7 @@ describe Mongoid::Report do
       end
     end
 
-    Report2 = Class.new do
+    report_klass2 = Class.new do
       include Mongoid::Report
 
       report 'example' do
@@ -64,15 +64,15 @@ describe Mongoid::Report do
       end
     end
 
-    TIMES = 10
+    times = 10
 
-    TIMES.times.map do |i|
+    times.times.map do |i|
       Thread.new do
         10000.times { klass.create!(day: i.days.ago, field1: 1) }
       end
     end.map(&:join)
 
-    report1 = Report1.new
+    report1 = report_klass1.new
     scoped = report1.aggregate
 
     time1 = Benchmark.measure do
@@ -80,7 +80,7 @@ describe Mongoid::Report do
       expect(rows['example-models'].rows[0]['field1']).to eq(10000)
     end
 
-    report2 = Report2.new
+    report2 = report_klass2.new
     scoped = report2.aggregate_for('example-models')
 
     time2 = Benchmark.measure do
@@ -97,7 +97,7 @@ describe Mongoid::Report do
   end
 
   it 'should merge properly results on splitted requests' do
-    Report = Class.new do
+    report_klass = Class.new do
       include Mongoid::Report
 
       report 'example' do
@@ -116,7 +116,7 @@ describe Mongoid::Report do
     klass.create!(day: 3.days.ago, field1: 1, field2: 1)
     klass.create!(day: 4.days.ago, field1: 1, field2: 1)
 
-    report = Report.new
+    report = report_klass.new
 
     scoped = report.aggregate_for('example-models')
     scoped = scoped
@@ -130,7 +130,7 @@ describe Mongoid::Report do
   end
 
   it 'should merge properly results with multiple groups' do
-    Report = Class.new do
+    report_klass = Class.new do
       include Mongoid::Report
 
       report 'example' do
@@ -149,7 +149,7 @@ describe Mongoid::Report do
     klass.create!(day: 3.days.ago, field1: 1, field2: 8, field3: 1)
     klass.create!(day: 4.days.ago, field1: 1, field2: 9, field3: 1)
 
-    report = Report.new
+    report = report_klass.new
 
     scoped = report.aggregate_for('example-models')
     scoped = scoped

@@ -2,12 +2,19 @@ module Mongoid
   module Report
 
     AttachProxy = Struct.new(:context, :collection, :options) do
-      attr_reader :attach_name
+      attr_reader :attach_name, :use_proc
 
       def initialize(context, collection, options)
         # Lets remove as option because of passing to the next blocks options
         @attach_name = options.delete(:as) || collection
-        options = options.merge(attach_name: attach_name, for: collection)
+        @use_proc    = options.delete(:use_proc) || false
+
+        options = options.merge(
+          attach_use_proc:  use_proc,
+          attach_name:      attach_name,
+          for:              collection,
+        )
+
         super(context, collection, options)
       end
 

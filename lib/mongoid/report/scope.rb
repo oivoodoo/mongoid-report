@@ -1,7 +1,11 @@
 module Mongoid
   module Report
 
-    Scope = Struct.new(:context, :report_name) do
+    Scope = Struct.new(:context, :report_name, :options) do
+      def initialize(context, report_name, options = {})
+        super
+      end
+
       def query(conditions = {})
         queries.concat([conditions]) unless conditions.empty?
         self
@@ -38,7 +42,7 @@ module Mongoid
               aggregation_queries
 
             # if groups == [batch.field]
-            rows.concat(klass.collection.aggregate(q))
+            rows.concat(collection.aggregate(q))
           end
         end
         threads.map(&:join)
@@ -47,8 +51,8 @@ module Mongoid
         merger.do(rows)
       end
 
-      def all_inleine(aggregation_queries)
-        klass.collection.aggregate(aggregation_queries)
+      def all_inline(aggregation_queries)
+        collection.aggregate(aggregation_queries)
       end
 
       def all
@@ -105,8 +109,32 @@ module Mongoid
         @queries ||= []
       end
 
-      def klass
-        context.report_module_settings[report_name][:for]
+      # Different usage for this method:
+      # - attach_to method contains collection name as first argument
+      # - attach_to method contains mongoid model
+      # - aggregate_for method contains attach_to proc option for calculating
+      # collection name.
+      def collection
+        @collection ||= begin
+          # In case if we are using dynamic collection name calculated by
+          # passing attach_to proc to the aggregate method.
+          if options[:attach_to]
+            collection_name = options[:attach_to].call
+            # Using default session to mongodb we can automatically provide
+            # access to collection.
+            Collections.get(collection_name)
+          else
+            klass = context.report_module_settings[report_name][:for]
+
+            if klass.respond_to?(:collection)
+              klass.collection
+            else
+              # In case if we are using collection name instead of mongoid
+              # model passed to the attach_to method.
+              Collections.get(klass)
+            end
+          end
+        end
       end
 
       def batches
@@ -115,7 +143,7 @@ module Mongoid
       end
 
       def output
-        @output ||= Mongoid::Report::Output.new(klass)
+        @output ||= Mongoid::Report::Output.new
       end
 
       def groups

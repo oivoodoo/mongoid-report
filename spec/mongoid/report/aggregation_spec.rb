@@ -8,7 +8,7 @@ describe Mongoid::Report do
 
   describe '.aggregate_for' do
     it 'aggregates fields by app' do
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
 
         attach_to Model do
@@ -20,7 +20,7 @@ describe Mongoid::Report do
       klass.create!(field1: 1)
       klass.create!(field1: 1)
 
-      example = Report.new
+      example = report_klass.new
       report = example.aggregate_for(klass)
       report = report.all
       rows = report.rows
@@ -34,12 +34,12 @@ describe Mongoid::Report do
       klass.create!(day: today     , field1: 1)
       klass.create!(day: yesterday , field1: 1)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
         group_by :day, for: Model
         column :field1, for: Model
       end
-      example = Report.new
+      example = report_klass.new
 
       report = example.aggregate_for(klass)
       report = report.all
@@ -60,12 +60,12 @@ describe Mongoid::Report do
       klass.create(day: two_days_ago , field1: 1 , field2: 2)
       klass.create(day: today        , field1: 1 , field2: 3)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
         group_by :day, for: Model
         column :field1, for: Model
       end
-      example = Report.new
+      example = report_klass.new
 
       scope = example.aggregate_for(Model)
       scope = scope.query('$match' => { :day  => { '$gte' => yesterday.mongoize, '$lte' => today.mongoize } })
@@ -87,12 +87,12 @@ describe Mongoid::Report do
     it 'skips empty match in query' do
       klass.create(day: today , field1: 1 , field2: 2)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
         group_by :day, for: Model
         column :field1, for: Model
       end
-      example = Report.new
+      example = report_klass.new
 
       scope = example.aggregate_for(Model)
       scope = scope.query()
@@ -115,7 +115,7 @@ describe Mongoid::Report do
       klass.create(day: yesterday    , field1: 1 , field2: 2)
       klass.create(day: two_days_ago , field1: 1 , field2: 2)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
 
         attach_to Model, as: 'example1' do
@@ -129,7 +129,7 @@ describe Mongoid::Report do
         end
       end
 
-      example = Report.new
+      example = report_klass.new
       scope = example.aggregate
       scope
         .query('$match' => { :day  => { '$gte' => yesterday.mongoize, '$lte' => today.mongoize } })
@@ -158,7 +158,7 @@ describe Mongoid::Report do
       klass.create(day: yesterday    , field1: 1 , field2: 2)
       klass.create(day: two_days_ago , field1: 1 , field2: 2)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
 
         report 'example' do
@@ -173,7 +173,7 @@ describe Mongoid::Report do
           end
         end
       end
-      example = Report.new
+      example = report_klass.new
 
       scope = example.aggregate
       scope
@@ -203,7 +203,7 @@ describe Mongoid::Report do
       klass.create(day: yesterday    , field1: 1 , field2: 2)
       klass.create(day: two_days_ago , field1: 1 , field2: 2)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
 
         report 'example' do
@@ -218,7 +218,7 @@ describe Mongoid::Report do
           end
         end
       end
-      example = Report.new
+      example = report_klass.new
 
       scope = example.aggregate
       scope
@@ -248,13 +248,13 @@ describe Mongoid::Report do
       klass.create(field1: 1, field2: 2)
       klass.create(field1: 3, field2: 4)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
 
         filter field2: 2, for: Model
         column :field1, for: Model
       end
-      example = Report.new
+      example = report_klass.new
 
       scope = example.aggregate
       scope = scope.all
@@ -268,7 +268,7 @@ describe Mongoid::Report do
       klass.create(field1: 1, field2: 2)
       klass.create(field1: 3, field2: 4)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
 
         report 'example' do
@@ -279,7 +279,7 @@ describe Mongoid::Report do
         end
       end
 
-      example = Report.new
+      example = report_klass.new
       scope = example.aggregate
       scope = scope.all
 
@@ -293,7 +293,7 @@ describe Mongoid::Report do
       klass.create(day: yesterday , field1: 1 , field2: 2)
       klass.create(day: today     , field1: 3 , field2: 4)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
 
         report 'example' do
@@ -304,7 +304,7 @@ describe Mongoid::Report do
           end
         end
       end
-      example = Report.new
+      example = report_klass.new
 
       scope = example.aggregate
       scope = scope.all
@@ -320,7 +320,7 @@ describe Mongoid::Report do
       klass.create(day: yesterday , field1: 1 , field2: 2)
       klass.create(day: today     , field1: 3 , field2: 4)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
 
         def values
@@ -335,7 +335,7 @@ describe Mongoid::Report do
           end
         end
       end
-      example = Report.new
+      example = report_klass.new
 
       scope = example.aggregate
       scope = scope.all

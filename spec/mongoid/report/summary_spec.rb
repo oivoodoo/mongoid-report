@@ -12,12 +12,12 @@ describe Mongoid::Report do
       klass.create!(day: today     , field1: 1)
       klass.create!(day: yesterday , field1: 1)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
         group_by :day, for: Model
         column :field1, for: Model
       end
-      example = Report.new
+      example = report_klass.new
 
       report = example.aggregate_for(klass)
       report = report.all
@@ -28,7 +28,7 @@ describe Mongoid::Report do
     end
 
     it 'should support dynamic columns as well' do
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
 
         COLUMNS = {
@@ -48,7 +48,7 @@ describe Mongoid::Report do
       klass.create!(field1: 1)
       klass.create!(field1: 1)
 
-      report = Report.new
+      report = report_klass.new
       report = report.aggregate_for('example-models')
       report = report.all
       rows = report.rows
@@ -63,7 +63,7 @@ describe Mongoid::Report do
     end
 
     it 'should not summaries day field' do
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
 
         report 'example' do
@@ -78,7 +78,7 @@ describe Mongoid::Report do
       klass.create!(day: DateTime.now, field1: 1)
       klass.create!(day: DateTime.now, field1: 1)
 
-      report = Report.new
+      report = report_klass.new
       report = report.aggregate_for('example-models')
       report = report.all
       rows = report.rows

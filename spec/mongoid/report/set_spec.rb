@@ -6,7 +6,7 @@ describe Mongoid::Report do
   it 'allows to save options per report and attached model' do
     2.times { klass.create!(field1: 1) }
 
-    Report = Class.new do
+    report_klass = Class.new do
       include Mongoid::Report
 
       report 'example' do
@@ -19,7 +19,7 @@ describe Mongoid::Report do
       end
     end
 
-    report = Report.new
+    report = report_klass.new
     report = report.aggregate_for('example-models')
     report = report.all
 
