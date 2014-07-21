@@ -128,4 +128,48 @@ describe Mongoid::Report do
     expect(values).to include(2)
     expect(values).to include(3)
   end
+
+  it 'should merge properly results with multiple groups' do
+    Report = Class.new do
+      include Mongoid::Report
+
+      report 'example' do
+        attach_to Model do
+          group_by :field1, :field2
+          batches pool_size: 2
+          column :field1, :field2, :field3
+        end
+      end
+    end
+
+    GROUP1 = 1
+    GROUP2 = 2
+    GROUP3 = 3
+    NEXT_GROUP = 4
+
+    klass.create!(day: 0.days.ago, field1: 1, field2: 4, field3: 1)
+    klass.create!(day: 1.days.ago, field1: 1, field2: 5, field3: 1)
+    klass.create!(day: 1.days.ago, field1: 2, field2: 6, field3: 2)
+    klass.create!(day: 2.days.ago, field1: 3, field2: 7, field3: 3)
+    klass.create!(day: 3.days.ago, field1: 1, field2: 8, field3: 1)
+    klass.create!(day: 4.days.ago, field1: 1, field2: 9, field3: 1)
+
+    report = Report.new
+
+    scoped = report.aggregate_for('example-models')
+    scoped = scoped
+      .in_batches(day: (5.days.ago.to_date..0.days.from_now.to_date))
+      .all
+
+    expect(scoped.summary['field3']).to eq(9)
+    expect(scoped.rows.size).to eq(6)
+    expect(scoped.rows).to eq([
+      {"field3"=>2, "field1"=>2, "field2"=>6},
+      {"field3"=>3, "field1"=>3, "field2"=>7},
+      {"field3"=>1, "field1"=>1, "field2"=>5},
+      {"field3"=>1, "field1"=>1, "field2"=>4},
+      {"field3"=>1, "field1"=>1, "field2"=>9},
+      {"field3"=>1, "field1"=>1, "field2"=>8}
+    ])
+  end
 end
