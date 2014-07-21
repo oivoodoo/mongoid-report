@@ -8,7 +8,7 @@ describe Mongoid::Report do
       include Mongoid::Report
 
       report 'example' do
-        attach_to use_proc: true do
+        attach_to do
           group_by :field1
           column :field3
         end
@@ -31,8 +31,10 @@ describe Mongoid::Report do
     expect(scoped.rows.size).to eq(2)
     expect(scoped.summary['field3']).to eq(2)
 
-    scoped = report.aggregate_for('example', attach_to: proc { "new-collection" })
-    scoped = scoped.all
+    scoped = report.aggregate_for('example')
+    scoped = scoped
+      .in('new-collection')
+      .all
 
     expect(scoped.rows.size).to eq(1)
     expect(scoped.rows[0]['field3']).to eq(2)

@@ -1,11 +1,7 @@
 module Mongoid
   module Report
 
-    Scope = Struct.new(:context, :report_name, :options) do
-      def initialize(context, report_name, options = {})
-        super
-      end
-
+    Scope = Struct.new(:context, :report_name) do
       def query(conditions = {})
         queries.concat([conditions]) unless conditions.empty?
         self
@@ -23,6 +19,11 @@ module Mongoid
 
       def out(collection_name)
         output.collection_name = collection_name
+        self
+      end
+
+      def in(collection_name)
+        input.collection_name = collection_name
         self
       end
 
@@ -118,11 +119,10 @@ module Mongoid
         @collection ||= begin
           # In case if we are using dynamic collection name calculated by
           # passing attach_to proc to the aggregate method.
-          if options[:attach_to]
-            collection_name = options[:attach_to].call
+          if input.present?
             # Using default session to mongodb we can automatically provide
             # access to collection.
-            Collections.get(collection_name)
+            input.collection
           else
             klass = context.report_module_settings[report_name][:for]
 
@@ -144,6 +144,10 @@ module Mongoid
 
       def output
         @output ||= Mongoid::Report::Output.new
+      end
+
+      def input
+        @input ||= Mongoid::Report::Input.new
       end
 
       def groups

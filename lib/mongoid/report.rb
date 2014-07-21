@@ -8,6 +8,7 @@ require_relative 'report/collection'
 require_relative 'report/batches'
 require_relative 'report/merger'
 require_relative 'report/output'
+require_relative 'report/input'
 require_relative 'report/scope'
 require_relative 'report/scope_collection'
 require_relative 'report/report_proxy'
@@ -63,13 +64,8 @@ module Mongoid
       #
       # @params:
       # report_name:String - "<report>-<attach-to-or-as-option>"
-      # options:Hash - could contain proc for attach_to block for getting dynamic
-      # collection name.
-      #
-      # Example: { attach_to: proc { "report-#{user.auth_token}" }
-      #
-      def aggregate_for(report_name, options = {})
-        Scope.new(self, report_name, options)
+      def aggregate_for(report_name)
+        Scope.new(self, report_name)
       end
 
       def aggregate
@@ -171,18 +167,15 @@ module Mongoid
         attach_name = options.fetch(:attach_name) { collection }
         options.delete(:attach_name)
 
-        # If user is using dynamic colleciton name for attach_to block.
-        attach_use_proc = options.delete(:attach_use_proc) || false
-
         # We should always have for option
-        initialize_settings_by(attach_name, collection, attach_use_proc: attach_use_proc)
+        initialize_settings_by(attach_name, collection)
 
         # Because of modifying fields(usign exract options method of
         # ActiveSupport) lets pass fields to the next block with collection.
         yield fields, attach_name, options || {}
       end
 
-      def initialize_settings_by(attach_name, collection, options = {})
+      def initialize_settings_by(attach_name, collection)
         settings[attach_name] ||= settings.fetch(attach_name) do
           {
             for:       collection,
@@ -192,7 +185,7 @@ module Mongoid
             columns:   {},
             mapping:   {},
             compiled:  false,
-          }.merge(options)
+          }
         end
       end
 
