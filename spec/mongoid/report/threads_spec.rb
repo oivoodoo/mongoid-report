@@ -142,11 +142,6 @@ describe Mongoid::Report do
       end
     end
 
-    GROUP1 = 1
-    GROUP2 = 2
-    GROUP3 = 3
-    NEXT_GROUP = 4
-
     klass.create!(day: 0.days.ago, field1: 1, field2: 4, field3: 1)
     klass.create!(day: 1.days.ago, field1: 1, field2: 5, field3: 1)
     klass.create!(day: 1.days.ago, field1: 2, field2: 6, field3: 2)
