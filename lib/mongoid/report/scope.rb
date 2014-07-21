@@ -1,87 +1,5 @@
 module Mongoid
   module Report
-    # We are using this class to combine results by group by fields.
-    Merger = Struct.new(:groups) do
-      def do(rows)
-        # Merge by groups.
-        groups.each do |group|
-          rows = rows
-            .group_by { |row| row[group] }
-            .values
-            .map { |array_row| combine(array_row) }
-          end
-
-        rows
-      end
-
-      private
-
-      def combine(rows)
-        rows.inject(Hash.new {|h,k| h[k] = 0}) do |row, lines|
-          lines.each do |key, value|
-            next row[key] = value if groups.include?(key)
-            row[key] += value
-          end
-
-          row
-        end
-      end
-    end
-
-    # Split the queries into threads.
-    Batches = Struct.new(:settings, :conditions) do
-      DEFAULT_THREAD_POOL_SIZE = 5
-
-      def initialize(settings = {}, conditions = {})
-        if settings.nil? || settings.empty?
-          settings = { 'pool_size' => DEFAULT_THREAD_POOL_SIZE }
-        end
-
-        super(settings, conditions)
-      end
-
-      def field
-        conditions.keys[0]
-      end
-
-      def range
-        conditions.values[0]
-      end
-
-      def map
-        range.each_slice(size.ceil).map do |r|
-          yield r
-        end
-      end
-
-      def size
-        range.count.to_f / settings['pool_size'].to_f
-      end
-
-      def present?
-        settings['pool_size'].present? &&
-          conditions.present?
-      end
-    end
-
-    Output = Struct.new(:klass) do
-      attr_accessor :collection_name
-
-      def do(rows)
-        session[collection_name].drop()
-        session[collection_name].insert(rows)
-      end
-
-      def present?
-        collection_name.present?
-      end
-
-      private
-
-      def session
-        klass.collection.database.session
-      end
-    end
 
     Scope = Struct.new(:context, :report_name) do
       def query(conditions = {})
@@ -197,7 +115,7 @@ module Mongoid
       end
 
       def output
-        @output ||= Output.new(klass)
+        @output ||= Mongoid::Report::Output.new(klass)
       end
 
       def groups
