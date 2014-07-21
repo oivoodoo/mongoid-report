@@ -64,6 +64,25 @@ module Mongoid
       end
     end
 
+    Output = Struct.new(:klass) do
+      attr_accessor :collection_name
+
+      def do(rows)
+        session[collection_name].drop()
+        session[collection_name].insert(rows)
+      end
+
+      def present?
+        collection_name.present?
+      end
+
+      private
+
+      def session
+        klass.collection.database.session
+      end
+    end
+
     Scope = Struct.new(:context, :report_name) do
       def query(conditions = {})
         queries.concat([conditions]) unless conditions.empty?
@@ -80,37 +99,54 @@ module Mongoid
         self
       end
 
+      def out(collection_name)
+        output.collection_name = collection_name
+        self
+      end
+
+      def all_in_batches(aggregation_queries)
+        # Lets assume we have only one field for making splits for the
+        # aggregation queries.
+        rows = []
+
+        threads = batches.map do |r|
+          # For now we are supporting only data fields for splitting up the
+          # queries.
+          range_match = r.map { |time| time.to_date.mongoize }
+
+          Thread.new do
+            q =
+              ['$match' => { batches.field => { '$gte' => range_match.first, '$lte' => range_match.last } }] +
+              aggregation_queries
+
+            # if groups == [batch.field]
+            rows.concat(klass.collection.aggregate(q))
+          end
+        end
+        threads.map(&:join)
+
+        merger = Mongoid::Report::Merger.new(groups)
+        merger.do(rows)
+      end
+
+      def all_inleine(aggregation_queries)
+        klass.collection.aggregate(aggregation_queries)
+      end
+
       def all
         self.yield unless yielded?
 
         aggregation_queries = compile_queries
 
-        if batches.present?
-          # Lets assume we have only one field for making splits for the
-          # aggregation queries.
-          rows = []
-
-          threads = batches.map do |r|
-            # For now we are supporting only data fields for splitting up the
-            # queries.
-            range_match = r.map { |time| time.to_date.mongoize }
-
-            Thread.new do
-              q =
-                ['$match' => { batches.field => { '$gte' => range_match.first, '$lte' => range_match.last } }] +
-                aggregation_queries
-
-              # if groups == [batch.field]
-              rows.concat(klass.collection.aggregate(q))
-            end
-          end
-          threads.map(&:join)
-
-          merger = Mongoid::Report::Merger.new(groups)
-          rows = merger.do(rows)
+        rows = if batches.present?
+          all_in_batches(aggregation_queries)
         else
-          # when we have no batches to run and lets do it inline.
-          rows = klass.collection.aggregate(aggregation_queries)
+          all_inline(aggregation_queries)
+        end
+
+        # in case if we want to store rows to collection
+        if output.present?
+          output.do(rows)
         end
 
         Collection.new(context, rows, fields, columns, mapping)
@@ -158,6 +194,10 @@ module Mongoid
       def batches
         @batches ||= Mongoid::Report::Batches.new(
           context.report_module_settings[report_name][:batches])
+      end
+
+      def output
+        @output ||= Output.new(klass)
       end
 
       def groups
