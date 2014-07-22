@@ -38,7 +38,7 @@ module Mongoid
         @report_module_settings = self.class.settings.dup
 
         @report_module_settings.each do |klass, configuration|
-          builder = QueriesBuilder.new(configuration)
+          builder = QueriesBuilder.new(self, klass)
 
           # Prepare group queries depends on the configuration in the included
           # class.
@@ -52,11 +52,37 @@ module Mongoid
       alias :initialize :initialize_report_module
 
       def queries(klass)
-        report_module_settings[klass][:queries]
+        queries1 = report_module_settings[klass][:queries]
+        queries2 = report_module_settings[self.class.report_module(klass)][:queries]
+
+        queries2.each_with_index.map do |query, index|
+          query.merge(queries1[index])
+        end
       end
 
       def mapping(klass)
-        report_module_settings[klass][:mapping]
+        report_module_settings[self.class.report_module(klass)][:mapping].merge(
+          report_module_settings[klass][:mapping])
+      end
+
+      def batches(klass)
+        report_module_settings[self.class.report_module(klass)][:batches].merge(
+          report_module_settings[klass][:batches])
+      end
+
+      def groups(klass)
+        report_module_settings[self.class.report_module(klass)][:group_by] |
+          report_module_settings[klass][:group_by]
+      end
+
+      def fields(klass)
+        report_module_settings[self.class.report_module(klass)][:fields] |
+          report_module_settings[klass][:fields]
+      end
+
+      def columns(klass)
+        report_module_settings[self.class.report_module(klass)][:columns].merge(
+          report_module_settings[klass][:columns])
       end
 
       # Method for preparing of aggregation scope where you can apply query,
@@ -115,8 +141,7 @@ module Mongoid
       def column(*fields)
         define_report_method(*fields) do |columns, report_name, options|
           columns.each do |column|
-            name = options.fetch(:as) { column }
-            add_field(report_name, column, name)
+            add_field(report_name, column)
           end
         end
       end
@@ -153,6 +178,11 @@ module Mongoid
           .fetch(key) { default }
       end
 
+      def report_module(klass)
+        # <report>-<attach-to>
+        klass.split(/-/)[0]
+      end
+
       private
 
       def define_report_method(*fields)
@@ -176,12 +206,28 @@ module Mongoid
       end
 
       def initialize_settings_by(attach_name, collection)
+        report = report_module(attach_name)
+
+        # base report settings that could be used as global settings.
+        settings[report] ||= settings.fetch(report) do
+          {
+            fields:    [],
+            group_by:  [],
+            queries:   [],
+            batches:   {},
+            columns:   {},
+            mapping:   {},
+            compiled:  false,
+          }
+        end
+
         settings[attach_name] ||= settings.fetch(attach_name) do
           {
             for:       collection,
-            fields:    ActiveSupport::OrderedHash.new,
+            fields:    [],
             group_by:  [],
             queries:   [],
+            batches:   {},
             columns:   {},
             mapping:   {},
             compiled:  false,
@@ -189,8 +235,8 @@ module Mongoid
         end
       end
 
-      def add_field(attach_name, field, name)
-        settings[attach_name][:fields][field.to_s] = name.to_s
+      def add_field(attach_name, field)
+        settings[attach_name][:fields] << field.to_s
       end
     end
 

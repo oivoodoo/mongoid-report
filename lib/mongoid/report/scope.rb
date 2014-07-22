@@ -138,8 +138,7 @@ module Mongoid
       end
 
       def batches
-        @batches ||= Mongoid::Report::Batches.new(
-          context.report_module_settings[report_name][:batches])
+        @batches ||= Mongoid::Report::Batches.new(context.batches(report_name))
       end
 
       def output
@@ -151,21 +150,21 @@ module Mongoid
       end
 
       def groups
-        @groups ||= context.report_module_settings[report_name][:group_by]
+        @groups ||= context.groups(report_name)
       end
 
       def fields
         # We need to use here only output field names it could be different
         # than defined colunms, Example: field1: 'report-field-name'
-        context.report_module_settings[report_name][:fields].values
+        context.fields(report_name)
       end
 
       def columns
-        context.report_module_settings[report_name][:columns]
+        context.columns(report_name)
       end
 
       def mapping
-        context.report_module_settings[report_name][:mapping]
+        context.mapping(report_name)
       end
     end
 
