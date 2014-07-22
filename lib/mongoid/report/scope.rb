@@ -17,8 +17,9 @@ module Mongoid
         self
       end
 
-      def out(collection_name)
+      def out(collection_name, options = {})
         output.collection_name = collection_name
+        output.options = options
         self
       end
 

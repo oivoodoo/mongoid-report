@@ -72,4 +72,51 @@ describe Mongoid::Report do
     expect(values).to include(2)
     expect(values).to include(3)
   end
+
+  it 'should leave data out of date range' do
+    report_klass = Class.new do
+      include Mongoid::Report
+
+      report 'example' do
+        attach_to Model do
+          group_by :day
+          batches pool_size: 2
+          column :field1, :day
+        end
+      end
+    end
+
+    stored_report_klass = Class.new do
+      include Mongoid::Document
+      store_in collection: 'stored-report'
+    end
+
+    klass.create!(day: 0.days.ago, field1: 1)
+    klass.create!(day: 1.days.ago, field1: 1)
+    klass.create!(day: 1.days.ago, field1: 1)
+    klass.create!(day: 2.days.ago, field1: 1)
+    klass.create!(day: 3.days.ago, field1: 1)
+    klass.create!(day: 4.days.ago, field1: 1)
+
+    report = report_klass.new
+    scoped = report.aggregate_for('example', 'models')
+    scoped = scoped
+      .in_batches(day: (1.days.ago.to_date..0.days.from_now.to_date))
+      .out('stored-report', drop: { 'day' => { '$gte' => 1.days.ago.to_date.mongoize, '$lte' => 0.days.from_now.to_date.mongoize } })
+      .all
+
+    scoped = report.aggregate_for('example', 'models')
+    scoped = scoped
+      .in_batches(day: (5.days.ago.to_date..1.days.ago.to_date))
+      .out('stored-report', drop: { 'day' => { '$gte' => 5.days.ago.to_date.mongoize, '$lte' => 1.days.ago.to_date.mongoize } })
+      .all
+
+    out = stored_report_klass.all
+    expect(out.count).to eq(5)
+
+    days = stored_report_klass.distinct('day')
+    4.times do |i|
+      expect(days).to include(i.days.ago.to_date)
+    end
+  end
 end
