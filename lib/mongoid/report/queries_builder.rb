@@ -1,7 +1,7 @@
 module Mongoid
   module Report
 
-    QueriesBuilder = Struct.new(:context, :klass) do
+    QueriesBuilder = Struct.new(:configuration) do
       def do
         [].tap do |queries|
           queries.concat([{ '$project' => project_query }])
@@ -13,14 +13,14 @@ module Mongoid
       private
 
       def groups
-        context.groups(klass)
+        configuration[:group_by]
       end
 
       def fields
         @fields ||= begin
-          columns = context.columns(klass)
+          columns = configuration[:columns].keys
 
-          context.fields(klass).select do |field|
+          configuration[:fields].select do |field|
             !columns.include?(field.to_sym)
           end
         end

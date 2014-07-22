@@ -24,7 +24,7 @@ describe Mongoid::Report do
     klass.create!(field1: 1, field2: 2, field3: 1)
 
     report = report_klass.new
-    scoped = report.aggregate_for('example-models')
+    scoped = report.aggregate_for('example', 'models')
     scoped = scoped
       .out('new-collection')
       .all
@@ -32,7 +32,7 @@ describe Mongoid::Report do
     expect(scoped.rows.size).to eq(2)
     expect(scoped.summary['field3']).to eq(2)
 
-    scoped = report.aggregate_for('example-pregenerated')
+    scoped = report.aggregate_for('example', 'pregenerated')
     scoped = scoped
       .in('new-collection')
       .all
@@ -66,14 +66,14 @@ describe Mongoid::Report do
     klass.create!(field1: 1, field2: 2, field3: 1)
 
     report = report_klass.new
-    scoped = report.aggregate_for('example-models')
+    scoped = report.aggregate_for('example', 'models')
     scoped = scoped
       .out('new-collection')
       .all
     expect(scoped.rows.size).to eq(2)
     expect(scoped.summary['field3']).to eq(2)
 
-    scoped = report.aggregate_for('example-pregenerated')
+    scoped = report.aggregate_for('example', 'pregenerated')
     scoped = scoped
       .in('new-collection')
       .all

@@ -14,12 +14,14 @@ describe Mongoid::Report do
 
       report_klass = Class.new do
         include Mongoid::Report
-        group_by :day, for: Model
-        column :field1, for: Model
+        def self.name ; 'report-klass' ; end
+
+        group_by :day, collection: Model
+        column :field1, collection: Model
       end
       example = report_klass.new
 
-      report = example.aggregate_for(klass)
+      report = example.aggregate_for('report-klass', 'models')
       report = report.all
       rows = report.rows
 
@@ -49,7 +51,7 @@ describe Mongoid::Report do
       klass.create!(field1: 1)
 
       report = report_klass.new
-      report = report.aggregate_for('example-models')
+      report = report.aggregate_for('example', 'models')
       report = report.all
       rows = report.rows
 
@@ -79,7 +81,7 @@ describe Mongoid::Report do
       klass.create!(day: DateTime.now, field1: 1)
 
       report = report_klass.new
-      report = report.aggregate_for('example-models')
+      report = report.aggregate_for('example', 'models')
       report = report.all
       rows = report.rows
 

@@ -6,11 +6,13 @@ describe Mongoid::Report::QueriesBuilder do
     it 'builds queries for aggregation' do
       report_klass = Class.new do
         include Mongoid::Report
-        column :field1, for: Model
+        def self.name ; 'report-klass' ; end
+
+        column :field1, collection: Model
       end
       report = report_klass.new
 
-      queries = report.queries(Model)
+      queries = report.queries('report-klass', 'models')
       expect(queries.size).to eq(3)
       expect(queries[0]).to eq(
         '$project' => {
@@ -32,6 +34,7 @@ describe Mongoid::Report::QueriesBuilder do
     it 'builds queries using custom one group' do
       report_klass = Class.new do
         include Mongoid::Report
+        def self.name ; 'report-klass' ; end
 
         attach_to Model do
           group_by :day
@@ -40,7 +43,7 @@ describe Mongoid::Report::QueriesBuilder do
       end
       report = report_klass.new
 
-      queries = report.queries(Model)
+      queries = report.queries('report-klass', 'models')
       expect(queries.size).to eq(3)
       expect(queries[0]).to eq(
         '$project' => {
@@ -61,18 +64,18 @@ describe Mongoid::Report::QueriesBuilder do
         })
     end
 
-    class Report5
-      include Mongoid::Report
-
-      attach_to Model do
-        group_by :day, :field2
-
-        column :field2, :field1, :field3
-      end
-    end
-
     it 'builds queries using custom one group' do
-      queries = Report5.new.queries(Model)
+      report_klass = Class.new do
+        include Mongoid::Report
+        def self.name ; 'report-klass' ; end
+
+        attach_to Model do
+          group_by :day, :field2
+          column :field2, :field1, :field3
+        end
+      end
+
+      queries = report_klass.new.queries('report-klass', 'models')
       expect(queries.size).to eq(3)
       expect(queries[0]).to eq(
         '$project' => {

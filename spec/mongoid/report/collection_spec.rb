@@ -8,6 +8,8 @@ describe Mongoid::Report::Collection do
       report_klass = Class.new do
         include Mongoid::Report
 
+        def self.name ; 'report-klass' ; end
+
         attach_to Model do
           column :field1
         end
@@ -16,8 +18,9 @@ describe Mongoid::Report::Collection do
       3.times { klass.create!(field1: 1) }
 
       example = report_klass.new
-      report = example.aggregate_for(klass)
-      report = report.all
+      report = example
+        .aggregate_for('report-klass', 'models')
+        .all
 
       rows = report.rows
       expect(rows.size).to eq(1)
@@ -30,6 +33,8 @@ describe Mongoid::Report::Collection do
       report_klass = Class.new do
         include Mongoid::Report
 
+        def self.name ; 'report-klass' ; end
+
         attach_to Model do
           column :field1, :field3, :field2
         end
@@ -37,7 +42,7 @@ describe Mongoid::Report::Collection do
 
       report = report_klass.new
       report = report
-        .aggregate_for(klass)
+        .aggregate_for('report-klass', 'models')
         .all
 
       expect(report.headers).to eq(["field1", "field3", "field2"])

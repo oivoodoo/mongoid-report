@@ -6,28 +6,18 @@ module Mongoid
     ReportProxy = Struct.new(:context, :name) do
       def attach_proxy
         @attach_proxy ||= begin
-          AttachProxy.new(context, nil, as: name)
+          AttachProxy.new(context, nil, report_module: name)
         end
       end
-      delegate :column, :columns, :mapping, :group_by, :filter, 
+      delegate :column, :columns, :mapping, :group_by, :filter,
         :batches, to: :attach_proxy
 
       def attach_to(*fields, &block)
         options = fields.extract_options!
         model   = fields[0]
 
-        as = options.fetch(:as) do
-          if model
-            model.respond_to?(:collection) ?
-              model.collection.name : model
-          end
-        end
-
-        if as
-          options.merge!(as: "#{name}-#{as}")
-        else
-          options.merge!(as: name)
-        end
+        report_name = options.delete(:as) || Collections.name(model)
+        options.merge!(report_module: name, as: report_name)
 
         context.attach_to(*fields, options, &block)
       end

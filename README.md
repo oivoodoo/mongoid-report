@@ -25,7 +25,7 @@ framework.
     report 'example' do
       attach_to Model do
         group_by :day
-        column :field1, for: Model
+        column :field1, collection: Model
       end
     end
   end

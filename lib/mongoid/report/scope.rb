@@ -1,7 +1,7 @@
 module Mongoid
   module Report
 
-    Scope = Struct.new(:context, :report_name) do
+    Scope = Struct.new(:context, :report_module, :report_name) do
       def query(conditions = {})
         queries.concat([conditions]) unless conditions.empty?
         self
@@ -11,7 +11,7 @@ module Mongoid
       def yield
         return self if @yielded
 
-        queries.concat(context.queries(report_name))
+        queries.concat(context.queries(report_module, report_name))
         @yielded = true
 
         self
@@ -124,7 +124,7 @@ module Mongoid
             # access to collection.
             input.collection
           else
-            klass = context.report_module_settings[report_name][:for]
+            klass = context.report_module_settings[report_module][:reports][report_name][:collection]
 
             if klass.respond_to?(:collection)
               klass.collection
@@ -138,7 +138,8 @@ module Mongoid
       end
 
       def batches
-        @batches ||= Mongoid::Report::Batches.new(context.batches(report_name))
+        @batches ||= Mongoid::Report::Batches.new(
+          context.batches(report_module, report_name))
       end
 
       def output
@@ -150,21 +151,21 @@ module Mongoid
       end
 
       def groups
-        @groups ||= context.groups(report_name)
+        @groups ||= context.groups(report_module, report_name)
       end
 
       def fields
         # We need to use here only output field names it could be different
         # than defined colunms, Example: field1: 'report-field-name'
-        context.fields(report_name)
+        context.fields(report_module, report_name)
       end
 
       def columns
-        context.columns(report_name)
+        context.columns(report_module, report_name)
       end
 
       def mapping
-        context.mapping(report_name)
+        context.mapping(report_module, report_name)
       end
     end
 

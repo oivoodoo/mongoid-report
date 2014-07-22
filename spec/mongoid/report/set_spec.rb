@@ -20,7 +20,7 @@ describe Mongoid::Report do
     end
 
     report = report_klass.new
-    report = report.aggregate_for('example-models')
+    report = report.aggregate_for('example', 'models')
     report = report.all
 
     rows = report.rows

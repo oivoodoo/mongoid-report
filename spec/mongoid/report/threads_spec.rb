@@ -1,7 +1,7 @@
 require 'spec_helper'
 require 'benchmark'
 
-describe Mongoid::Report do
+describe Mongoid::Report, long: true do
   let(:klass) { Model }
 
   it 'aggregates fields by app in threads' do
@@ -77,11 +77,11 @@ describe Mongoid::Report do
 
     time1 = Benchmark.measure do
       rows = scoped.all
-      expect(rows['example-models'].rows[0]['field1']).to eq(10000)
+      expect(rows['example']['models'].rows[0]['field1']).to eq(10000)
     end
 
     report2 = report_klass2.new
-    scoped = report2.aggregate_for('example-models')
+    scoped = report2.aggregate_for('example', 'models')
 
     time2 = Benchmark.measure do
       scoped = scoped
@@ -118,7 +118,7 @@ describe Mongoid::Report do
 
     report = report_klass.new
 
-    scoped = report.aggregate_for('example-models')
+    scoped = report.aggregate_for('example', 'models')
     scoped = scoped
       .in_batches(day: (5.days.ago.to_date..0.days.from_now.to_date))
       .all
@@ -151,7 +151,7 @@ describe Mongoid::Report do
 
     report = report_klass.new
 
-    scoped = report.aggregate_for('example-models')
+    scoped = report.aggregate_for('example', 'models')
     scoped = scoped
       .in_batches(day: (5.days.ago.to_date..0.days.from_now.to_date))
       .all

@@ -16,6 +16,8 @@ RSpec.configure do |config|
 
   config.mock_with :rspec
 
+  config.filter_run_excluding long: true unless ENV['ALL']
+
   config.after(:each) do
     Mongoid.purge!
   end

@@ -26,7 +26,7 @@ describe Mongoid::Report do
 
     report = report_klass.new
 
-    scoped = report.aggregate_for('example-models')
+    scoped = report.aggregate_for('example', 'models')
     scoped = scoped
       .in_batches(day: (5.days.ago.to_date..0.days.from_now.to_date))
       .out('stored-report')
@@ -53,7 +53,7 @@ describe Mongoid::Report do
     ########## 2. Making the second report and out to the defined collection name with new data.
     klass.create!(day: 3.days.ago, field1: 1, field2: 1)
 
-    scoped = report.aggregate_for('example-models')
+    scoped = report.aggregate_for('example', 'models')
     scoped = scoped
       .in_batches(day: (5.days.ago.to_date..0.days.from_now.to_date))
       .out('stored-report')
