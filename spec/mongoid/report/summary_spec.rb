@@ -94,6 +94,48 @@ describe Mongoid::Report do
       expect(report.summary.keys.size).to eq(1)
       expect(report.summary['field1']).to eq(3)
     end
+
+    it 'should calculate dynamic columns for summary' do
+      Report2 = Class.new do
+        include Mongoid::Report
+
+        COLUMNS = {
+          :'new-field1' => ->(context, row, options) { row['field2'] * 10 / row['field1'] * 1.2 },
+          :'new-field2' => ->(context, row, options) { row['field2'] * 20.0 * row['field1'] / 100 },
+        }
+
+        report 'example' do
+          attach_to Model do
+            columns COLUMNS
+            group_by :day
+            column :day, :field1, :field2, 'new-field1', 'new-field2'
+          end
+        end
+      end
+
+      klass.create!(day: 1.day.ago, field1: 1, field2: 3)
+      klass.create!(day: 2.day.ago, field1: 2, field2: 0)
+      klass.create!(day: 3.day.ago, field1: 3, field2: 1)
+      klass.create!(day: 4.day.ago, field1: 4, field2: 0)
+
+      report = Report2.new
+      report = report.aggregate_for('example-models')
+      report = report.all
+      rows = report.rows
+
+      expect(rows[0].keys.size).to eq(5)
+      expect(rows[0]['field1']).to eq(4)
+      expect(rows[0]['field2']).to eq(0)
+      expect(rows[0]['new-field1']).to eq(0.0)
+      expect(rows[0]['new-field2']).to eq(0.0)
+
+      expect(report.summary.keys.size).to eq(4)
+      expect(report.summary['field1']).to eq(10)
+      expect(report.summary['field2']).to eq(4)
+      expect(report.summary['new-field1']).to eq(4.8)
+      expect(report.summary['new-field2']).to eq(8.0)
+    end
+
   end
 
 end
