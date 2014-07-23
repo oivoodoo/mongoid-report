@@ -119,6 +119,8 @@ module Mongoid
         options = fields.extract_options!
         collection = fields[0]
 
+        options.merge!(report_name: options[:as]) if options[:as]
+
         define_report_method(options.merge(collection: collection)) do
           proxy = AttachProxy.new(self, collection, options)
           proxy.instance_eval(&block)
