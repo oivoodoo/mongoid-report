@@ -1,7 +1,7 @@
 module Mongoid
   module Report
 
-    QueriesBuilder = Struct.new(:settings) do
+    QueriesBuilder = Struct.new(:configuration) do
       def do
         [].tap do |queries|
           queries.concat([{ '$project' => project_query }])
@@ -13,26 +13,22 @@ module Mongoid
       private
 
       def groups
-        @group_by ||= settings.fetch(:group_by, [])
+        configuration[:group_by]
       end
 
       def fields
-        @fields ||= settings[:fields].select do |field, _|
-          !settings[:columns].include?(field.to_sym)
+        @fields ||= begin
+          columns = configuration[:columns].keys
+
+          configuration[:fields].select do |field|
+            !columns.include?(field.to_sym)
+          end
         end
-      end
-
-      def in_fields
-        @in_fields ||= fields.keys
-      end
-
-      def output_fields
-        @output_fields ||= fields.values
       end
 
       def all_fields
         [:_id]
-          .concat(in_fields)
+          .concat(fields)
           .concat(groups)
       end
 
@@ -52,7 +48,7 @@ module Mongoid
             hash.merge!(group => GROUP_TEMPLATE % group)
           end
 
-          in_fields.inject(query) do |hash, field|
+          fields.inject(query) do |hash, field|
             next hash if groups.include?(field)
             hash.merge!(field => { '$sum' => GROUP_TEMPLATE % field })
           end
@@ -72,9 +68,9 @@ module Mongoid
             end
           end
 
-          fields.inject(query) do |hash, (field, name)|
+          fields.inject(query) do |hash, field|
             next hash if groups.include?(field)
-            hash.merge!(name => "$#{field}")
+            hash.merge!(field => "$#{field}")
           end
         end
       end

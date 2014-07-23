@@ -5,8 +5,10 @@ describe Mongoid::Report::Collection do
 
   describe '.rows' do
     it 'use returns aggregated rows' do
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
+
+        def self.name ; 'report-klass' ; end
 
         attach_to Model do
           column :field1
@@ -15,9 +17,10 @@ describe Mongoid::Report::Collection do
 
       3.times { klass.create!(field1: 1) }
 
-      example = Report.new
-      report = example.aggregate_for(klass)
-      report = report.all
+      example = report_klass.new
+      report = example
+        .aggregate_for('report-klass', 'models')
+        .all
 
       rows = report.rows
       expect(rows.size).to eq(1)
@@ -27,17 +30,19 @@ describe Mongoid::Report::Collection do
 
   describe '.headers' do
     it 'returns columns for showing in the reports' do
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
+
+        def self.name ; 'report-klass' ; end
 
         attach_to Model do
           column :field1, :field3, :field2
         end
       end
 
-      report = Report.new
+      report = report_klass.new
       report = report
-        .aggregate_for(klass)
+        .aggregate_for('report-klass', 'models')
         .all
 
       expect(report.headers).to eq(["field1", "field3", "field2"])

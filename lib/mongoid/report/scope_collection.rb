@@ -10,8 +10,12 @@ module Mongoid
       end
 
       def scopes
-        @scopes ||= modules.map do |key|
-          Scope.new(context, key)
+        @scopes ||= [].tap do |collection|
+          context.settings.each do |report_module, module_settings|
+            module_settings[:reports].each do |report_name, _report_settings|
+              collection << Scope.new(context, report_module, report_name)
+            end
+          end
         end
       end
 
@@ -37,30 +41,25 @@ module Mongoid
       end
 
       def all
-        {}.tap do |hash|
+        Hash.new { |h, k| h[k] = {} }.tap do |hash|
           if Mongoid::Report::Config.use_threads_on_aggregate
             scopes.map do |scope|
               Thread.new do
                 rows = scope.all
 
                 @mutex.synchronize do
-                  hash[scope.report_name] = rows
+                  hash[scope.report_module][scope.report_name] = rows
                 end
               end
             end.map(&:join)
           else
             scopes.each do |scope|
-              hash[scope.report_name] = scope.all
+              hash[scope.report_module][scope.report_name] = scope.all
             end
           end
         end
       end
 
-      private
-
-      def modules
-        context.settings.keys
-      end
     end
 
   end

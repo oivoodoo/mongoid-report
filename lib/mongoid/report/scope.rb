@@ -1,42 +1,7 @@
 module Mongoid
   module Report
 
-    Batches = Struct.new(:settings, :conditions) do
-      DEFAULT_THREAD_POOL_SIZE = 3
-
-      def initialize(settings = {}, conditions = {})
-        if settings.nil? || settings.empty?
-          settings = { 'pool_size' => DEFAULT_THREAD_POOL_SIZE }
-        end
-
-        super(settings, conditions)
-      end
-
-      def field
-        conditions.keys[0]
-      end
-
-      def range
-        conditions.values[0]
-      end
-
-      def map
-        range.each_slice(size.ceil).map do |r|
-          yield r
-        end
-      end
-
-      def size
-        range.count / settings['pool_size']
-      end
-
-      def present?
-        settings['pool_size'].present? &&
-          conditions.present?
-      end
-    end
-
-    Scope = Struct.new(:context, :report_name) do
+    Scope = Struct.new(:context, :report_module, :report_name) do
       def query(conditions = {})
         queries.concat([conditions]) unless conditions.empty?
         self
@@ -46,10 +11,50 @@ module Mongoid
       def yield
         return self if @yielded
 
-        queries.concat(context.queries(report_name))
+        queries.concat(context.queries(report_module, report_name))
         @yielded = true
 
         self
+      end
+
+      def out(collection_name, options = {})
+        output.collection_name = collection_name
+        output.options = options
+        self
+      end
+
+      def in(collection_name)
+        input.collection_name = collection_name
+        self
+      end
+
+      def all_in_batches(aggregation_queries)
+        # Lets assume we have only one field for making splits for the
+        # aggregation queries.
+        rows = []
+
+        threads = batches.map do |r|
+          # For now we are supporting only data fields for splitting up the
+          # queries.
+          range_match = r.map { |time| time.to_date.mongoize }
+
+          Thread.new do
+            q =
+              ['$match' => { batches.field => { '$gte' => range_match.first, '$lte' => range_match.last } }] +
+              aggregation_queries
+
+            # if groups == [batch.field]
+            rows.concat(collection.aggregate(q))
+          end
+        end
+        threads.map(&:join)
+
+        merger = Mongoid::Report::Merger.new(groups)
+        merger.do(rows)
+      end
+
+      def all_inline(aggregation_queries)
+        collection.aggregate(aggregation_queries)
       end
 
       def all
@@ -57,31 +62,18 @@ module Mongoid
 
         aggregation_queries = compile_queries
 
-        if batches.present?
-          # Lets assume we have only one field for making splits for the
-          # aggregation queries.
-          rows = []
-
-          threads = batches.map do |r|
-            # For now we are supporting only data fields for splitting up the
-            # queries.
-            range_match = r.map { |time| time.to_date.mongoize }
-
-            Thread.new do
-              q =
-                ['$match' => { batches.field => { '$gte' => range_match.first, '$lte' => range_match.last } }] +
-                aggregation_queries
-              rows.concat(klass.collection.aggregate(q))
-            end
-          end
-          threads.map(&:join)
-
-          Collection.new(context, rows, fields, columns, mapping)
+        rows = if batches.present?
+          all_in_batches(aggregation_queries)
         else
-          # when we have no batches to run and lets do it inline.
-          rows = klass.collection.aggregate(aggregation_queries)
-          Collection.new(context, rows, fields, columns, mapping)
+          all_inline(aggregation_queries)
         end
+
+        # in case if we want to store rows to collection
+        if output.present?
+          output.do(rows)
+        end
+
+        Collection.new(context, rows, fields, columns, mapping)
       end
 
       def in_batches(conditions)
@@ -119,27 +111,62 @@ module Mongoid
         @queries ||= []
       end
 
-      def klass
-        context.report_module_settings[report_name][:for]
+      # Different usage for this method:
+      # - attach_to method contains collection name as first argument
+      # - attach_to method contains mongoid model
+      # - aggregate_for method contains attach_to proc option for calculating
+      # collection name.
+      def collection
+        @collection ||= begin
+          # In case if we are using dynamic collection name calculated by
+          # passing attach_to proc to the aggregate method.
+          if input.present?
+            # Using default session to mongodb we can automatically provide
+            # access to collection.
+            input.collection
+          else
+            klass = context.report_module_settings[report_module][:reports][report_name][:collection]
+
+            if klass.respond_to?(:collection)
+              klass.collection
+            else
+              # In case if we are using collection name instead of mongoid
+              # model passed to the attach_to method.
+              Collections.get(klass)
+            end
+          end
+        end
       end
 
       def batches
         @batches ||= Mongoid::Report::Batches.new(
-          context.report_module_settings[report_name][:batches])
+          context.batches(report_module, report_name))
+      end
+
+      def output
+        @output ||= Mongoid::Report::Output.new
+      end
+
+      def input
+        @input ||= Mongoid::Report::Input.new
+      end
+
+      def groups
+        @groups ||= context.groups(report_module, report_name)
       end
 
       def fields
         # We need to use here only output field names it could be different
         # than defined colunms, Example: field1: 'report-field-name'
-        context.report_module_settings[report_name][:fields].values
+        context.fields(report_module, report_name)
       end
 
       def columns
-        context.report_module_settings[report_name][:columns]
+        context.columns(report_module, report_name)
       end
 
       def mapping
-        context.report_module_settings[report_name][:mapping]
+        context.mapping(report_module, report_name)
       end
     end
 

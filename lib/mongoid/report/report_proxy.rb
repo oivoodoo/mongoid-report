@@ -1,13 +1,25 @@
+require 'securerandom'
+
 module Mongoid
   module Report
 
     ReportProxy = Struct.new(:context, :name) do
-      def attach_to(model, options = {}, &block)
-        as = options.fetch(:as) { model.collection.name }
+      def attach_proxy
+        @attach_proxy ||= begin
+          AttachProxy.new(context, nil, report_module: name)
+        end
+      end
+      delegate :column, :columns, :mapping, :group_by, :filter,
+        :batches, to: :attach_proxy
 
-        options.merge!(as: "#{name}-#{as}")
+      def attach_to(*fields, &block)
+        options = fields.extract_options!
+        model   = fields[0]
 
-        context.attach_to(model, options, &block)
+        report_name = options.delete(:as) || Collections.name(model)
+        options.merge!(report_module: name, as: report_name)
+
+        context.attach_to(*fields, options, &block)
       end
     end
 

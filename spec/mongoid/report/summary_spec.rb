@@ -12,14 +12,16 @@ describe Mongoid::Report do
       klass.create!(day: today     , field1: 1)
       klass.create!(day: yesterday , field1: 1)
 
-      Report1 = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
-        group_by :day, for: Model
-        column :field1, for: Model
-      end
-      example = Report1.new
+        def self.name ; 'report-klass' ; end
 
-      report = example.aggregate_for(klass)
+        group_by :day, collection: Model
+        column :field1, collection: Model
+      end
+      example = report_klass.new
+
+      report = example.aggregate_for('report-klass', 'models')
       report = report.all
       rows = report.rows
 
@@ -28,7 +30,7 @@ describe Mongoid::Report do
     end
 
     it 'should support dynamic columns as well' do
-      Report2 = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
 
         COLUMNS = {
@@ -48,8 +50,8 @@ describe Mongoid::Report do
       klass.create!(field1: 2, field2: 2)
       klass.create!(field1: 3, field2: 1)
 
-      report = Report2.new
-      report = report.aggregate_for('example-models')
+      report = report_klass.new
+      report = report.aggregate_for('example', 'models')
       report = report.all
       rows = report.rows
 
@@ -67,7 +69,7 @@ describe Mongoid::Report do
     end
 
     it 'should not summaries day field' do
-      Report3 = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
 
         report 'example' do
@@ -82,8 +84,8 @@ describe Mongoid::Report do
       klass.create!(day: DateTime.now, field1: 1)
       klass.create!(day: DateTime.now, field1: 1)
 
-      report = Report3.new
-      report = report.aggregate_for('example-models')
+      report = report_klass.new
+      report = report.aggregate_for('example', 'models')
       report = report.all
       rows = report.rows
 
@@ -96,7 +98,7 @@ describe Mongoid::Report do
     end
 
     it 'should calculate dynamic columns for summary' do
-      Report2 = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
 
         COLUMNS = {
@@ -118,8 +120,8 @@ describe Mongoid::Report do
       klass.create!(day: 3.day.ago, field1: 3, field2: 1)
       klass.create!(day: 4.day.ago, field1: 4, field2: 0)
 
-      report = Report2.new
-      report = report.aggregate_for('example-models')
+      report = report_klass.new
+      report = report.aggregate_for('example', 'models')
       report = report.all
       rows = report.rows
 

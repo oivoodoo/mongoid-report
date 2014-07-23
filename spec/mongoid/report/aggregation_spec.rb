@@ -8,8 +8,9 @@ describe Mongoid::Report do
 
   describe '.aggregate_for' do
     it 'aggregates fields by app' do
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
+        def self.name ; 'report-klass' ; end
 
         attach_to Model do
           column :field1
@@ -20,10 +21,11 @@ describe Mongoid::Report do
       klass.create!(field1: 1)
       klass.create!(field1: 1)
 
-      example = Report.new
-      report = example.aggregate_for(klass)
-      report = report.all
-      rows = report.rows
+      example = report_klass.new
+      report = example.aggregate_for('report-klass', 'models')
+      scoped = report.all
+
+      rows = scoped.rows
 
       expect(rows.size).to eq(1)
       expect(rows[0]['field1']).to eq(3)
@@ -34,14 +36,16 @@ describe Mongoid::Report do
       klass.create!(day: today     , field1: 1)
       klass.create!(day: yesterday , field1: 1)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
-        group_by :day, for: Model
-        column :field1, for: Model
-      end
-      example = Report.new
+        def self.name ; 'report-klass' ; end
 
-      report = example.aggregate_for(klass)
+        group_by :day, collection: Model
+        column :field1, collection: Model
+      end
+      example = report_klass.new
+
+      report = example.aggregate_for('report-klass', 'models')
       report = report.all
 
       rows = report.rows
@@ -60,14 +64,16 @@ describe Mongoid::Report do
       klass.create(day: two_days_ago , field1: 1 , field2: 2)
       klass.create(day: today        , field1: 1 , field2: 3)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
-        group_by :day, for: Model
-        column :field1, for: Model
-      end
-      example = Report.new
+        def self.name ; 'report-klass' ; end
 
-      scope = example.aggregate_for(Model)
+        group_by :day, collection: Model
+        column :field1, collection: Model
+      end
+      example = report_klass.new
+
+      scope = example.aggregate_for('report-klass', 'models')
       scope = scope.query('$match' => { :day  => { '$gte' => yesterday.mongoize, '$lte' => today.mongoize } })
       scope = scope.query('$match' => { :field2 => 2 })
       scope = scope.yield
@@ -87,14 +93,16 @@ describe Mongoid::Report do
     it 'skips empty match in query' do
       klass.create(day: today , field1: 1 , field2: 2)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
-        group_by :day, for: Model
-        column :field1, for: Model
-      end
-      example = Report.new
+        def self.name ; 'report-klass' ; end
 
-      scope = example.aggregate_for(Model)
+        group_by :day, collection: Model
+        column :field1, collection: Model
+      end
+      example = report_klass.new
+
+      scope = example.aggregate_for('report-klass', 'models')
       scope = scope.query()
       scope = scope.query({})
 
@@ -115,8 +123,9 @@ describe Mongoid::Report do
       klass.create(day: yesterday    , field1: 1 , field2: 2)
       klass.create(day: two_days_ago , field1: 1 , field2: 2)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
+        def self.name ; 'report-klass' ; end
 
         attach_to Model, as: 'example1' do
           group_by :day
@@ -129,7 +138,7 @@ describe Mongoid::Report do
         end
       end
 
-      example = Report.new
+      example = report_klass.new
       scope = example.aggregate
       scope
         .query('$match' => { :day  => { '$gte' => yesterday.mongoize, '$lte' => today.mongoize } })
@@ -137,14 +146,14 @@ describe Mongoid::Report do
         .query('$sort' => { day: -1 })
       scope = scope.all
 
-      rows = scope['example1'].rows
+      rows = scope['report-klass']['example1'].rows
       expect(rows.size).to eq(2)
       expect(rows[0]['field1']).to eq(2)
       expect(rows[0]['day']).to eq(today)
       expect(rows[1]['field1']).to eq(1)
       expect(rows[1]['day']).to eq(yesterday)
 
-      rows = scope['example2'].rows
+      rows = scope['report-klass']['example2'].rows
       expect(rows.size).to eq(2)
       expect(rows[0]['field2']).to eq(4)
       expect(rows[0]['day']).to eq(today)
@@ -158,8 +167,9 @@ describe Mongoid::Report do
       klass.create(day: yesterday    , field1: 1 , field2: 2)
       klass.create(day: two_days_ago , field1: 1 , field2: 2)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
+        def self.name ; 'report-klass' ; end
 
         report 'example' do
           attach_to Model, as: 'model1' do
@@ -173,7 +183,7 @@ describe Mongoid::Report do
           end
         end
       end
-      example = Report.new
+      example = report_klass.new
 
       scope = example.aggregate
       scope
@@ -182,14 +192,14 @@ describe Mongoid::Report do
         .query('$sort' => { day: -1 })
       scope = scope.all
 
-      rows = scope['example-model1'].rows
+      rows = scope['example']['model1'].rows
       expect(rows.size).to eq(2)
       expect(rows[0]['field1']).to eq(2)
       expect(rows[0]['day']).to eq(today)
       expect(rows[1]['field1']).to eq(1)
       expect(rows[1]['day']).to eq(yesterday)
 
-      rows = scope['example-model2'].rows
+      rows = scope['example']['model2'].rows
       expect(rows.size).to eq(2)
       expect(rows[0]['field2']).to eq(4)
       expect(rows[0]['day']).to eq(today)
@@ -203,13 +213,14 @@ describe Mongoid::Report do
       klass.create(day: yesterday    , field1: 1 , field2: 2)
       klass.create(day: two_days_ago , field1: 1 , field2: 2)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
+        def self.name ; 'report-klass' ; end
 
         report 'example' do
           attach_to Model, as: 'model1' do
             group_by :day
-            column :field1, as: 'new-field1'
+            column :field1
           end
 
           attach_to Model, as: 'model2' do
@@ -218,7 +229,7 @@ describe Mongoid::Report do
           end
         end
       end
-      example = Report.new
+      example = report_klass.new
 
       scope = example.aggregate
       scope
@@ -227,14 +238,14 @@ describe Mongoid::Report do
         .query('$sort' => { day: -1 })
       scope = scope.all
 
-      rows = scope['example-model1'].rows
+      rows = scope['example']['model1'].rows
       expect(rows.size).to eq(2)
-      expect(rows[0]['new-field1']).to eq(2)
+      expect(rows[0]['field1']).to eq(2)
       expect(rows[0]['day']).to eq(today)
-      expect(rows[1]['new-field1']).to eq(1)
+      expect(rows[1]['field1']).to eq(1)
       expect(rows[1]['day']).to eq(yesterday)
 
-      rows = scope['example-model2'].rows
+      rows = scope['example']['model2'].rows
       expect(rows.size).to eq(2)
       expect(rows[0]['field2']).to eq(4)
       expect(rows[0]['day']).to eq(today)
@@ -248,18 +259,19 @@ describe Mongoid::Report do
       klass.create(field1: 1, field2: 2)
       klass.create(field1: 3, field2: 4)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
+        def self.name ; 'report-klass' ; end
 
-        filter field2: 2, for: Model
-        column :field1, for: Model
+        filter field2: 2, collection: Model
+        column :field1, collection: Model
       end
-      example = Report.new
+      example = report_klass.new
 
       scope = example.aggregate
       scope = scope.all
 
-      rows = scope[Model].rows
+      rows = scope['report-klass']['models'].rows
       expect(rows.size).to eq(1)
       expect(rows[0]['field1']).to eq(1)
     end
@@ -268,8 +280,9 @@ describe Mongoid::Report do
       klass.create(field1: 1, field2: 2)
       klass.create(field1: 3, field2: 4)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
+        def self.name ; 'report-klass' ; end
 
         report 'example' do
           attach_to Model do
@@ -279,11 +292,11 @@ describe Mongoid::Report do
         end
       end
 
-      example = Report.new
+      example = report_klass.new
       scope = example.aggregate
       scope = scope.all
 
-      rows = scope['example-models'].rows
+      rows = scope['example']['models'].rows
       expect(rows.size).to eq(1)
       expect(rows[0]['field1']).to eq(1)
     end
@@ -293,8 +306,9 @@ describe Mongoid::Report do
       klass.create(day: yesterday , field1: 1 , field2: 2)
       klass.create(day: today     , field1: 3 , field2: 4)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
+        def self.name ; 'report-klass' ; end
 
         report 'example' do
           attach_to Model do
@@ -304,12 +318,12 @@ describe Mongoid::Report do
           end
         end
       end
-      example = Report.new
+      example = report_klass.new
 
       scope = example.aggregate
       scope = scope.all
 
-      rows = scope['example-models'].rows
+      rows = scope['example']['models'].rows
       expect(rows.size).to eq(1)
       expect(rows[0]['field1']).to eq(1)
     end
@@ -320,8 +334,9 @@ describe Mongoid::Report do
       klass.create(day: yesterday , field1: 1 , field2: 2)
       klass.create(day: today     , field1: 3 , field2: 4)
 
-      Report = Class.new do
+      report_klass = Class.new do
         include Mongoid::Report
+        def self.name ; 'report-klass' ; end
 
         def values
           [1, 2]
@@ -335,12 +350,12 @@ describe Mongoid::Report do
           end
         end
       end
-      example = Report.new
+      example = report_klass.new
 
       scope = example.aggregate
       scope = scope.all
 
-      rows = scope['example-models'].rows
+      rows = scope['example']['models'].rows
       expect(rows.size).to eq(2)
       expect(rows[0]['field1']).to eq(1)
       expect(rows[1]['field1']).to eq(2)

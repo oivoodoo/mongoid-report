@@ -5,6 +5,11 @@ require_relative 'report/config'
 require_relative 'report/queries_builder'
 require_relative 'report/attach_proxy'
 require_relative 'report/collection'
+require_relative 'report/batches'
+require_relative 'report/merger'
+require_relative 'report/collections'
+require_relative 'report/output'
+require_relative 'report/input'
 require_relative 'report/scope'
 require_relative 'report/scope_collection'
 require_relative 'report/report_proxy'
@@ -33,31 +38,70 @@ module Mongoid
         # Lets store settings under created instance.
         @report_module_settings = self.class.settings.dup
 
-        @report_module_settings.each do |klass, configuration|
-          builder = QueriesBuilder.new(configuration)
+        @report_module_settings.each do |report_module, module_configuration|
+          # Lets do not run queries builder in case of missing queries or group
+          # by parameters
+          unless module_configuration[:queries].empty? && module_configuration[:group_by].empty?
+            builder = QueriesBuilder.new(module_configuration)
 
-          # Prepare group queries depends on the configuration in the included
-          # class.
-          @queries = builder.do
+            # Prepare group queries depends on the configuration in the included
+            # class.
+            queries = builder.do
 
-          # Now we have access to compiled queries to run it in aggregation
-          # framework.
-          configuration[:queries].concat(@queries)
+            # Now we have access to compiled queries to run it in aggregation
+            # framework.
+            module_configuration[:queries].concat(queries)
+          end
+
+          module_configuration[:reports].each do |report_name, report_configuration|
+            # Lets merge report and module settings together.
+            report_configuration[:fields]    = report_configuration[:fields] | module_configuration[:fields]
+            report_configuration[:group_by]  = report_configuration[:group_by] | module_configuration[:group_by]
+            report_configuration[:columns]   = report_configuration[:columns].merge(module_configuration[:columns])
+            report_configuration[:mapping]   = report_configuration[:mapping].merge(module_configuration[:mapping])
+
+            builder = QueriesBuilder.new(report_configuration)
+
+            # Prepare group queries depends on the configuration in the included
+            # class.
+            queries = builder.do
+
+            # Now we have access to compiled queries to run it in aggregation
+            # framework.
+            report_configuration[:queries].concat(queries)
+          end
         end
       end
       alias :initialize :initialize_report_module
 
-      def queries(klass)
-        report_module_settings[klass][:queries]
+      def queries(report_module, report_name)
+        report_module_settings[report_module][:reports][report_name][:queries]
       end
 
-      def mapping(klass)
-        report_module_settings[klass][:mapping]
+      def mapping(report_module, report_name)
+        report_module_settings[report_module][:reports][report_name][:mapping]
       end
 
-      # We should pass here mongoid document
-      def aggregate_for(report_name)
-        Scope.new(self, report_name)
+      def batches(report_module, report_name)
+        report_module_settings[report_module][:reports][report_name][:batches]
+      end
+
+      def groups(report_module, report_name)
+        report_module_settings[report_module][:reports][report_name][:group_by]
+      end
+
+      def fields(report_module, report_name)
+        report_module_settings[report_module][:reports][report_name][:fields]
+      end
+
+      def columns(report_module, report_name)
+        report_module_settings[report_module][:reports][report_name][:columns]
+      end
+
+      # Method for preparing of aggregation scope where you can apply query,
+      # yield and other grouping methods.
+      def aggregate_for(report_module, report_name)
+        Scope.new(self, report_module, report_name)
       end
 
       def aggregate
@@ -71,20 +115,25 @@ module Mongoid
         proxy.instance_eval(&block)
       end
 
-      def attach_to(collection, options = {}, &block)
-        proxy = AttachProxy.new(self, collection, options)
-        proxy.instance_eval(&block)
+      def attach_to(*fields, &block)
+        options = fields.extract_options!
+        collection = fields[0]
+
+        define_report_method(options.merge(collection: collection)) do
+          proxy = AttachProxy.new(self, collection, options)
+          proxy.instance_eval(&block)
+        end
       end
 
       def batches(*fields)
-        define_report_method(*fields) do |_, report_name, batches|
-          self.settings[report_name][:batches] = batches.stringify_keys!
+        define_report_method(*fields) do |_, report_module, report_name, batches|
+          self.set_settings(report_module, report_name, :batches, batches.stringify_keys!)
         end
       end
 
       def filter(*fields)
-        define_report_method(*fields) do |_, report_name, options|
-          queries = self.settings_property(report_name, :queries)
+        define_report_method(*fields) do |_, report_module, report_name, options|
+          queries = self.get_settings(report_module, report_name, :queries)
 
           options.each do |key, value|
             queries
@@ -96,50 +145,51 @@ module Mongoid
       end
 
       def group_by(*fields)
-        define_report_method(*fields) do |groups, report_name, _|
-          settings[report_name][:group_by] = groups.map(&:to_s)
+        define_report_method(*fields) do |groups, report_module, report_name, _|
+          self.set_settings(report_module, report_name, :group_by, groups.map(&:to_s))
         end
       end
 
       def column(*fields)
-        define_report_method(*fields) do |columns, report_name, options|
-          columns.each do |column|
-            name = options.fetch(:as) { column }
-            add_field(report_name, column, name)
+        define_report_method(*fields) do |columns, report_module, report_name, _|
+          columns.each do |field|
+            self.get_settings(report_module, report_name, :fields) << field.to_s
           end
         end
       end
 
       def columns(*fields)
-        define_report_method(*fields) do |_, report_name, columns|
-          self.settings[report_name][:columns] = columns.stringify_keys!
+        define_report_method(*fields) do |_, report_module, report_name, columns|
+          self.set_settings(report_module, report_name, :columns, columns.stringify_keys!)
         end
       end
 
       def mapping(*fields)
-        define_report_method(*fields) do |_, report_name, mapping|
+        define_report_method(*fields) do |_, report_module, report_name, mapping|
           mapping.stringify_keys!
 
           mapping.each do |key, value|
             mapping[key] = value.to_s
           end
 
-          self.settings[report_name][:mapping] = mapping
+          self.set_settings(report_module, report_name, :mapping, mapping)
         end
       end
 
-      def fields(collection)
-        settings_property(collection, :fields, {})
+      def get_settings(report_module, report_name, field)
+        unless report_name
+          self.settings[report_module][field]
+        else
+          self.settings[report_module][:reports][report_name][field]
+        end
       end
 
-      def groups(collection)
-        settings_property(collection, :group_by, [])
-      end
-
-      def settings_property(collection, key, default = [])
-        settings
-          .fetch(collection) { {} }
-          .fetch(key) { default }
+      def set_settings(report_module, report_name, field, value)
+        unless report_name
+          self.settings[report_module][field] = value
+        else
+          self.settings[report_module][:reports][report_name][field] = value
+        end
       end
 
       private
@@ -148,38 +198,53 @@ module Mongoid
         options = fields.extract_options!
 
         # We should always specify model to attach fields, groups
-        collection = options.fetch(:for)
-        options.delete(:for)
+        collection = options.fetch(:collection)
+        options.delete(:collection)
 
-        # If user didn't pass as option to name the report we are using
-        # collection class as key for settings.
-        attach_name = options.fetch(:attach_name) { collection }
-        options.delete(:attach_name)
+        report_module = options.delete(:report_module)
+        report_module ||= self.name
+
+        report_name = options.delete(:report_name)
+        report_name ||= Collections.name(collection)
 
         # We should always have for option
-        initialize_settings_by(attach_name, collection)
+        initialize_settings_by(report_module, report_name, collection)
 
         # Because of modifying fields(usign exract options method of
         # ActiveSupport) lets pass fields to the next block with collection.
-        yield fields, attach_name, options || {}
+        yield fields, report_module, report_name, options || {}
       end
 
-      def initialize_settings_by(attach_name, collection)
-        settings[attach_name] ||= settings.fetch(attach_name) do
+      def initialize_settings_by(report_module, report_name, collection)
+        # Global settings for the report block
+        settings[report_module] ||= settings.fetch(report_module) do
           {
-            for:       collection,
-            fields:    ActiveSupport::OrderedHash.new,
+            reports:   {},
+            fields:    [],
             group_by:  [],
             queries:   [],
+            batches:   {},
             columns:   {},
             mapping:   {},
             compiled:  false,
           }
         end
-      end
 
-      def add_field(attach_name, field, name)
-        settings[attach_name][:fields][field.to_s] = name.to_s
+        return unless report_name
+
+        settings[report_module][:reports][report_name] ||=
+          settings[report_module][:reports].fetch(report_name) do
+            {
+              collection: collection,
+              fields:     [],
+              group_by:   [],
+              queries:    [],
+              batches:    {},
+              columns:    {},
+              mapping:    {},
+              compiled:   false,
+            }
+          end
       end
     end
 
