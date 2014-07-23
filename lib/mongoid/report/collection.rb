@@ -36,7 +36,7 @@ module Mongoid
           # Apply dynamic columns for summarized row
           @columns.each do |name, function|
             next unless @fields.include?(name)
-            summary[name] = function.call(@context, row, { mapping: @mapping, summary: true })
+            summary[name] = function.call(@context, summary, { mapping: @mapping, summary: true })
           end
 
           summary
