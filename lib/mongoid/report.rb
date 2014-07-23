@@ -119,8 +119,10 @@ module Mongoid
         options = fields.extract_options!
         collection = fields[0]
 
-        proxy = AttachProxy.new(self, collection, options)
-        proxy.instance_eval(&block)
+        define_report_method(options.merge(collection: collection)) do
+          proxy = AttachProxy.new(self, collection, options)
+          proxy.instance_eval(&block)
+        end
       end
 
       def batches(*fields)
