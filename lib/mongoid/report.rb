@@ -53,6 +53,11 @@ module Mongoid
             module_configuration[:queries].concat(queries)
           end
 
+          # For now we are filtering by $match queries only.
+          matches = module_configuration[:queries].select do |query|
+            query['$match'].present?
+          end
+
           module_configuration[:reports].each do |report_name, report_configuration|
             # Lets merge report and module settings together.
             report_configuration[:fields]    = report_configuration[:fields] | module_configuration[:fields]
@@ -68,6 +73,7 @@ module Mongoid
 
             # Now we have access to compiled queries to run it in aggregation
             # framework.
+            report_configuration[:queries].concat(matches)
             report_configuration[:queries].concat(queries)
           end
         end
