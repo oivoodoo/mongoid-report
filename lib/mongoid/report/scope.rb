@@ -126,14 +126,7 @@ module Mongoid
             input.collection
           else
             klass = context.report_module_settings[report_module][:reports][report_name][:collection]
-
-            if klass.respond_to?(:collection)
-              klass.collection
-            else
-              # In case if we are using collection name instead of mongoid
-              # model passed to the attach_to method.
-              Collections.get(klass)
-            end
+            Collections.get(klass)
           end
         end
       end

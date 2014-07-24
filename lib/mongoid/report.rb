@@ -36,7 +36,7 @@ module Mongoid
 
       def initialize_report_module
         # Lets store settings under created instance.
-        @report_module_settings = self.class.settings.dup
+        @report_module_settings = self.class.settings.deep_dup
 
         @report_module_settings.each do |report_module, module_configuration|
           # Lets do not run queries builder in case of missing queries or group
@@ -209,6 +209,11 @@ module Mongoid
         collection = options.fetch(:collection)
         options.delete(:collection)
 
+        # In case if user passed mongoid model we should get name of collection
+        # instead of using mongoid models. on deep_dup operations it will work
+        # find with strings.
+        collection = Collections.name(collection)
+
         report_module = options.delete(:report_module)
         report_module ||= self.name
 
@@ -234,7 +239,6 @@ module Mongoid
             batches:   {},
             columns:   {},
             mapping:   {},
-            compiled:  false,
           }
         end
 
@@ -250,7 +254,6 @@ module Mongoid
               batches:    {},
               columns:    {},
               mapping:    {},
-              compiled:   false,
             }
           end
       end

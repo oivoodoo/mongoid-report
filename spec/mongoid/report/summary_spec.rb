@@ -125,12 +125,6 @@ describe Mongoid::Report do
       report = report.all
       rows = report.rows
 
-      expect(rows[0].keys.size).to eq(5)
-      expect(rows[0]['field1']).to eq(4)
-      expect(rows[0]['field2']).to eq(0)
-      expect(rows[0]['new-field1']).to eq(0.0)
-      expect(rows[0]['new-field2']).to eq(0.0)
-
       expect(report.summary.keys.size).to eq(4)
       expect(report.summary['field1']).to eq(10)
       expect(report.summary['field2']).to eq(4)

@@ -21,7 +21,7 @@ describe Mongoid::Report do
     end
   end
 
- describe '.attach_to' do
+  describe '.attach_to' do
     let(:report_klass) do
       Class.new do
         include Mongoid::Report
