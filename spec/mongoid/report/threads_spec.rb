@@ -158,13 +158,11 @@ describe Mongoid::Report, long: true do
 
     expect(scoped.summary['field3']).to eq(9)
     expect(scoped.rows.size).to eq(6)
-    expect(scoped.rows).to eq([
-      {"field3"=>2, "field1"=>2, "field2"=>6},
-      {"field3"=>3, "field1"=>3, "field2"=>7},
-      {"field3"=>1, "field1"=>1, "field2"=>5},
-      {"field3"=>1, "field1"=>1, "field2"=>4},
-      {"field3"=>1, "field1"=>1, "field2"=>9},
-      {"field3"=>1, "field1"=>1, "field2"=>8}
-    ])
+    expect(scoped.rows).to include({"field3"=>2, "field1"=>2, "field2"=>6})
+    expect(scoped.rows).to include({"field3"=>3, "field1"=>3, "field2"=>7})
+    expect(scoped.rows).to include({"field3"=>1, "field1"=>1, "field2"=>5})
+    expect(scoped.rows).to include({"field3"=>1, "field1"=>1, "field2"=>4})
+    expect(scoped.rows).to include({"field3"=>1, "field1"=>1, "field2"=>9})
+    expect(scoped.rows).to include({"field3"=>1, "field1"=>1, "field2"=>8})
   end
 end
