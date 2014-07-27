@@ -23,10 +23,13 @@ module Mongoid
 
       class_attribute :settings
 
+      # TODO: rewrite this module adding clone method for the all settings
+      # defined for the mongoid-report. for now it's creating the duplicates.
+      # check out the mongoid library for the best example.
       self.settings = {}
 
       def self.inherited(subclass)
-        subclass.settings = self.settings.dup
+        subclass.settings = {}
       end
 
       # Variable for copying internal class settings to the instance because of
@@ -36,7 +39,30 @@ module Mongoid
 
       def initialize_report_module
         # Lets store settings under created instance.
-        @report_module_settings = self.class.settings.deep_dup
+        @report_module_settings = self.settings.inject({}) do |hash_module, (report_module, module_settings)|
+          hash_module.merge!(
+            report_module =>
+              {
+                fields:     module_settings[:fields],
+                group_by:   module_settings[:group_by],
+                batches:    module_settings[:batches],
+                columns:    module_settings[:columns],
+                mapping:    module_settings[:mapping],
+                queries:    (module_settings[:queries] || []).dup,
+                reports:    (module_settings[:reports] || {}).inject({}) do |hash_report, (report_name, report_settings)|
+                  hash_report.merge!(
+                    report_name => {
+                      collection:  report_settings[:collection],
+                      fields:      report_settings[:fields],
+                      group_by:    report_settings[:group_by],
+                      batches:     report_settings[:batches],
+                      columns:     report_settings[:columns],
+                      mapping:     report_settings[:mapping],
+                      queries:     (report_settings[:queries] || []).dup,
+                    })
+                end
+              })
+        end
 
         @report_module_settings.each do |report_module, module_configuration|
           # Lets do not run queries builder in case of missing queries or group
@@ -50,7 +76,7 @@ module Mongoid
 
             # Now we have access to compiled queries to run it in aggregation
             # framework.
-            module_configuration[:queries].concat(queries)
+            module_configuration[:queries] = module_configuration[:queries] + queries
           end
 
           # For now we are filtering by $match queries only.
@@ -73,8 +99,7 @@ module Mongoid
 
             # Now we have access to compiled queries to run it in aggregation
             # framework.
-            report_configuration[:queries].concat(matches)
-            report_configuration[:queries].concat(queries)
+            report_configuration[:queries] = report_configuration[:queries] + matches + queries
           end
         end
       end
@@ -235,10 +260,11 @@ module Mongoid
             reports:   {},
             fields:    [],
             group_by:  [],
-            queries:   [],
             batches:   {},
             columns:   {},
             mapping:   {},
+            # needs to be cloned
+            queries:   [],
           }
         end
 
@@ -250,10 +276,11 @@ module Mongoid
               collection: collection,
               fields:     [],
               group_by:   [],
-              queries:    [],
               batches:    {},
               columns:    {},
               mapping:    {},
+              # needs to be cloned
+              queries:    [],
             }
           end
       end
