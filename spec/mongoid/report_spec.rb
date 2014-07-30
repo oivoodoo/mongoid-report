@@ -162,4 +162,33 @@ describe Mongoid::Report do
       expect(settings1).not_to eq(settings2)
     end
   end
+
+  describe 'empty filters' do
+    it 'should work fine with passed empty filter value' do
+      report_klass = Class.new do
+        include Mongoid::Report
+
+        report 'example' do
+          attach_to 'models' do
+            filter field1: {}
+            filter field2: 1
+            filter field3: { '$in' => [1,2,3] }
+            column :field1, :field2, :field3
+          end
+        end
+      end
+
+      Model.create(field1: 1, field2: 2, field3: 1)
+      Model.create(field1: 1, field2: 1, field3: 2)
+      Model.create(field1: 1, field2: 1, field3: 4)
+
+      report = report_klass.new
+      scope = report.aggregate_for('example', 'models').all
+
+      expect(scope.rows.size).to eq(1)
+      expect(scope.rows[0]['field1']).to eq(1)
+      expect(scope.rows[0]['field2']).to eq(1)
+      expect(scope.rows[0]['field3']).to eq(2)
+    end
+  end
 end

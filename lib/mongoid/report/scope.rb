@@ -1,3 +1,5 @@
+require 'set'
+
 module Mongoid
   module Report
 
@@ -84,8 +86,10 @@ module Mongoid
       private
 
       def compile_queries
-        compiled = queries.map do |query|
-          next query unless query.has_key?("$match")
+        compiled = Set.new
+
+        queries.each do |query|
+          next compiled << query unless query.has_key?("$match")
 
           query.deep_dup.tap do |new_query|
             new_query.each do |function_name, values|
@@ -94,13 +98,21 @@ module Mongoid
                   value = value.call(context)
                 end
 
-                new_query[function_name][name] = value
+                unless value.present?
+                  # In case we don't have value for applying match, lets skip
+                  # this type of the queries.
+                  new_query.delete(function_name)
+                else
+                  new_query[function_name][name] = value
+                end
               end
-            end
+            end # new_query.each
+
+            compiled << new_query if new_query.present?
           end
         end
 
-        compiled
+        compiled.to_a
       end
 
       def yielded?
