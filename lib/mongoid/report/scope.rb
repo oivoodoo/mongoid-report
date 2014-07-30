@@ -89,23 +89,29 @@ module Mongoid
         compiled = Set.new
 
         queries.each do |query|
-          next compiled << query unless query.has_key?("$match")
+          next compiled << query if query.has_key?("$project") || query.has_key?('$group')
 
           query.deep_dup.tap do |new_query|
             new_query.each do |function_name, values|
-              values.each do |name, value|
-                if value.respond_to?(:call)
-                  value = value.call(context)
+
+              if values.respond_to?(:call)
+                new_query[function_name] = values.call(context)
+              else
+                values.each do |name, value|
+                  if value.respond_to?(:call)
+                    value = value.call(context)
+                  end
+
+                  unless value.present?
+                    # In case we don't have value for applying match, lets skip
+                    # this type of the queries.
+                    new_query.delete(function_name)
+                  else
+                    new_query[function_name][name] = value
+                  end
                 end
 
-                unless value.present?
-                  # In case we don't have value for applying match, lets skip
-                  # this type of the queries.
-                  new_query.delete(function_name)
-                else
-                  new_query[function_name][name] = value
-                end
-              end
+              end # values.is_a?(Proc)
             end # new_query.each
 
             compiled << new_query if new_query.present?

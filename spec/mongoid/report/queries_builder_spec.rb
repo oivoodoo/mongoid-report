@@ -111,6 +111,12 @@ describe Mongoid::Report::QueriesBuilder do
           query '$match' => { 'field1' => 1 }
           match 'field2' => 2
           match 'field3' => ->(report) { 3 }
+          match '$or' => ->(this) {
+            [
+              { 'field1' => 1 },
+              { 'field2' => 2 },
+            ]
+          }
           column :field1, :field2
         end
       end
