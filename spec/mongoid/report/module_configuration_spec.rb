@@ -6,7 +6,7 @@ describe Mongoid::Report do
       include Mongoid::Report
 
       report 'example' do
-        filter field1: 1
+        match field1: 1
 
         attach_to Model, as: 'models1' do ; end
         attach_to Model, as: 'models2' do

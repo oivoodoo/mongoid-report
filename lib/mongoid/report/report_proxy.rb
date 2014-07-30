@@ -9,7 +9,7 @@ module Mongoid
           AttachProxy.new(context, nil, report_module: name)
         end
       end
-      delegate :column, :columns, :mapping, :group_by, :filter,
+      delegate :column, :columns, :mapping, :group_by, :match,
         :batches, to: :attach_proxy
 
       def attach_to(*fields, &block)

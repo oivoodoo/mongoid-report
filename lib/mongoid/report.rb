@@ -33,7 +33,7 @@ module Mongoid
       end
 
       # Variable for copying internal class settings to the instance because of
-      # possible modifications in case of using filters with lambda
+      # possible modifications in case of using maches with lambda
       # expressions.
       attr_reader :report_module_settings
 
@@ -164,7 +164,7 @@ module Mongoid
         end
       end
 
-      def filter(*fields)
+      def match(*fields)
         define_report_method(*fields) do |_, report_module, report_name, options|
           queries = self.get_settings(report_module, report_name, :queries)
 

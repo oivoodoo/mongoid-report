@@ -44,10 +44,10 @@ module Mongoid
         context.group_by(*fields, proxy_options)
       end
 
-      def filter(*fields)
+      def match(*fields)
         proxy_options = fields.extract_options!
         proxy_options.merge!(options)
-        context.filter(*fields, proxy_options)
+        context.match(*fields, proxy_options)
       end
 
       def batches(*fields)

@@ -254,8 +254,8 @@ describe Mongoid::Report do
     end
   end
 
-  describe '.filter' do
-    it 'creates filter' do
+  describe '.match' do
+    it 'creates match' do
       klass.create(field1: 1, field2: 2)
       klass.create(field1: 3, field2: 4)
 
@@ -263,7 +263,7 @@ describe Mongoid::Report do
         include Mongoid::Report
         def self.name ; 'report-klass' ; end
 
-        filter field2: 2, collection: Model
+        match field2: 2, collection: Model
         column :field1, collection: Model
       end
       example = report_klass.new
@@ -276,7 +276,7 @@ describe Mongoid::Report do
       expect(rows[0]['field1']).to eq(1)
     end
 
-    it 'creates filter in report scope' do
+    it 'creates match in report scope' do
       klass.create(field1: 1, field2: 2)
       klass.create(field1: 3, field2: 4)
 
@@ -286,7 +286,7 @@ describe Mongoid::Report do
 
         report 'example' do
           attach_to Model do
-            filter field2: 2
+            match field2: 2
             column :field1
           end
         end
@@ -301,7 +301,7 @@ describe Mongoid::Report do
       expect(rows[0]['field1']).to eq(1)
     end
 
-    it 'creates filter in report scope' do
+    it 'creates match in report scope' do
       klass.create(day: today     , field1: 1 , field2: 2)
       klass.create(day: yesterday , field1: 1 , field2: 2)
       klass.create(day: today     , field1: 3 , field2: 4)
@@ -312,7 +312,7 @@ describe Mongoid::Report do
 
         report 'example' do
           attach_to Model do
-            filter field2: 2,
+            match field2: 2,
               day: ->(context) { Date.parse("20-12-2004").mongoize }
             column :field1
           end
@@ -328,7 +328,7 @@ describe Mongoid::Report do
       expect(rows[0]['field1']).to eq(1)
     end
 
-    it 'creates filter in report scope' do
+    it 'creates match in report scope' do
       klass.create(day: today     , field1: 1 , field2: 2)
       klass.create(day: today     , field1: 1 , field2: 2)
       klass.create(day: yesterday , field1: 1 , field2: 2)
@@ -345,7 +345,7 @@ describe Mongoid::Report do
         report 'example' do
           attach_to Model do
             group_by :day
-            filter field2: ->(context) { { '$in' => context.values } }
+            match field2: ->(context) { { '$in' => context.values } }
             column :field1
           end
         end

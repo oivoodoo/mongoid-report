@@ -7,7 +7,7 @@ describe Mongoid::Report do
 
       report 'example' do
         attach_to Model do
-          filter field2: 2
+          match field2: 2
           column :field1
         end
       end

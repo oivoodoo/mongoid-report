@@ -163,16 +163,16 @@ describe Mongoid::Report do
     end
   end
 
-  describe 'empty filters' do
-    it 'should work fine with passed empty filter value' do
+  describe 'empty matchs' do
+    it 'should work fine with passed empty match value' do
       report_klass = Class.new do
         include Mongoid::Report
 
         report 'example' do
           attach_to 'models' do
-            filter field1: {}
-            filter field2: 1
-            filter field3: { '$in' => [1,2,3] }
+            match field1: {}
+            match field2: 1
+            match field3: { '$in' => [1,2,3] }
             column :field1, :field2, :field3
           end
         end
