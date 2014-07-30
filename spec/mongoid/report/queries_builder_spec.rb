@@ -110,15 +110,25 @@ describe Mongoid::Report::QueriesBuilder do
         attach_to 'models' do
           query '$match' => { 'field1' => 1 }
           match 'field2' => 2
+          match 'field3' => ->(report) { 3 }
           column :field1, :field2
         end
       end
     end
 
+    Model.create(field1: 1, field2: 2, field3: 1)
+    Model.create(field1: 2, field2: 2, field3: 1)
+    Model.create(field1: 1, field2: 2, field3: 3)
+
     report = report_klass.new
     queries = report.report_module_settings['example'][:reports]['models'][:queries]
     expect(queries).to include('$match' => { 'field1' => 1 })
     expect(queries).to include('$match' => { 'field2' => 2 })
+
+    scope = report.aggregate_for('example', 'models').all
+    expect(scope.rows.size).to eq(1)
+    expect(scope.rows[0]['field1']).to eq(1)
+    expect(scope.rows[0]['field2']).to eq(2)
   end # it
 
 end
