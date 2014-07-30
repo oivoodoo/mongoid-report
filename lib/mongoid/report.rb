@@ -177,6 +177,16 @@ module Mongoid
         end
       end
 
+      def query(*fields)
+        define_report_method(*fields) do |_, report_module, report_name, options|
+          queries = self.get_settings(report_module, report_name, :queries)
+
+          options.each do |key, value|
+            queries.concat([{ key => value }])
+          end
+        end
+      end
+
       def group_by(*fields)
         define_report_method(*fields) do |groups, report_module, report_name, _|
           self.set_settings(report_module, report_name, :group_by, groups.map(&:to_s))

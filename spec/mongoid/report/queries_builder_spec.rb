@@ -102,4 +102,23 @@ describe Mongoid::Report::QueriesBuilder do
     end
   end
 
+  it 'allows to pass raw query' do
+    report_klass = Class.new do
+      include Mongoid::Report
+
+      report 'example' do
+        attach_to 'models' do
+          query '$match' => { 'field1' => 1 }
+          match 'field2' => 2
+          column :field1, :field2
+        end
+      end
+    end
+
+    report = report_klass.new
+    queries = report.report_module_settings['example'][:reports]['models'][:queries]
+    expect(queries).to include('$match' => { 'field1' => 1 })
+    expect(queries).to include('$match' => { 'field2' => 2 })
+  end # it
+
 end

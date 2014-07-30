@@ -50,6 +50,12 @@ module Mongoid
         context.match(*fields, proxy_options)
       end
 
+      def query(*fields)
+        proxy_options = fields.extract_options!
+        proxy_options.merge!(options)
+        context.query(*fields, proxy_options)
+      end
+
       def batches(*fields)
         proxy_options = fields.extract_options!
         proxy_options.merge!(options)

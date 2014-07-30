@@ -10,7 +10,7 @@ module Mongoid
         end
       end
       delegate :column, :columns, :mapping, :group_by, :match,
-        :batches, to: :attach_proxy
+        :batches, :query, to: :attach_proxy
 
       def attach_to(*fields, &block)
         options = fields.extract_options!
