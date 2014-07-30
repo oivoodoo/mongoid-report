@@ -46,7 +46,7 @@ module Mongoid
               aggregation_queries
 
             # if groups == [batch.field]
-            rows.concat(collection.aggregate(q))
+            rows.concat(Array(collection.aggregate(q)))
           end
         end
         threads.map(&:join)
@@ -56,7 +56,7 @@ module Mongoid
       end
 
       def all_inline(aggregation_queries)
-        collection.aggregate(aggregation_queries)
+        Array(collection.aggregate(aggregation_queries))
       end
 
       def all
