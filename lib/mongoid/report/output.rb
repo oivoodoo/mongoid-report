@@ -18,7 +18,7 @@ module Mongoid
 
         # We will use custom way for dropping the collection or removing the
         # records partially
-        collection.find(options[:drop]).remove()
+        collection.find(options[:drop]).remove_all()
       end
 
       private
