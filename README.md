@@ -63,9 +63,7 @@ Or install it yourself as:
 
 ## Contributors
 
-  @oivoodoo
-
-  @baltazore
+  [@oivoodoo](http://github.com/oivoodoo) and  [@baltazore](http://github.com/baltazore)
 
 ## Contributing
 
