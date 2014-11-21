@@ -6,6 +6,9 @@ module Mongoid
 
       def do(rows)
         drop()
+
+        return if rows.empty?
+
         collection.insert(rows)
       end
 

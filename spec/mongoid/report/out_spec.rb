@@ -3,6 +3,26 @@ require 'spec_helper'
 describe Mongoid::Report do
   let(:klass) { Model }
 
+  it 'should work fine for no documents to insert' do
+    report_klass = Class.new do
+      include Mongoid::Report
+
+      report 'example' do
+        attach_to Model do
+          group_by :field1
+          batches pool_size: 2
+          column :field1, :field2
+        end
+      end
+    end
+
+    report = report_klass.new
+
+    scoped = report.aggregate_for('example', 'models')
+    scoped = scoped.out('stored-report')
+    expect { scoped.all }.not_to raise_error
+  end
+
   it 'should merge properly results on splitted requests' do
     ########## 1. Making the first report and out to the defined collection name.
     report_klass = Class.new do
